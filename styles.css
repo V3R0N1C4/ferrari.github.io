@@ -132,14 +132,9 @@ img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 54px;
+  width: 18px;
+  height: 25px;
   flex-shrink: 0;
-}
-
-.brand-shield img {
-  width: 100%;
-  height: auto;
 }
 
 .brand-text {
@@ -1152,9 +1147,4 @@ img {
   .result-table {
     font-size: 13px;
   }
-}
-
-.logo-icon {
-  height: 40px;
-  width: auto;
 }
