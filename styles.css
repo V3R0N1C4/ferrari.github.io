@@ -449,7 +449,7 @@ img {
 
 .cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 28px;
 }
 
@@ -819,6 +819,122 @@ img {
   margin-top: 6px;
 }
 
+/* ============ CIRCUIT PREVIEWS ============ */
+
+.circuit-preview {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+          linear-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  background-size: 20px 20px;
+  border: 1px solid var(--border-soft);
+  margin: 0 0 18px;
+  padding: 6px;
+}
+
+.circuit-preview svg {
+  width: 100%;
+  height: 100%;
+}
+
+.circuit-s1,
+.circuit-s2,
+.circuit-s3 {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.circuit-s1 {
+  stroke: var(--ferrari-red);
+}
+
+.circuit-s2 {
+  stroke: var(--ferrari-gold);
+}
+
+.circuit-s3 {
+  stroke: var(--ink);
+}
+
+.circuit-start {
+  stroke: var(--ink);
+  stroke-linecap: round;
+}
+
+.circuit-sector-line {
+  stroke: var(--ink);
+  stroke-width: 1.1;
+  stroke-dasharray: 3 3;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
+.circuit-sector-label {
+  fill: var(--muted);
+  font-size: 0.05px;
+  font-weight: 800;
+  font-family: inherit;
+  letter-spacing: 0.05em;
+}
+
+.circuit-panel {
+  border: 1px solid var(--border);
+  background: #FBFBFA;
+  margin: 22px 0 26px;
+  padding: 16px 18px 12px;
+}
+
+.circuit-panel-art {
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+          linear-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.circuit-panel-art svg {
+  width: 100%;
+  height: 100%;
+}
+
+.circuit-panel-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.circuit-panel-name {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.circuit-panel-length {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .circuit-panel-art {
+    height: 170px;
+  }
+}
+
 /* ============ FOOTER ============ */
 
 .site-footer {
@@ -1032,6 +1148,204 @@ img {
 .status-wdn { color: #8E44AD; }
 .status-exc { color: #D35400; }
 
+/* ============ COVER ART GP ============ */
+
+.race-card {
+  position: relative;
+}
+
+.cover-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(16, 16, 16, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.cover-btn:hover,
+.cover-btn.active {
+  background: var(--ferrari-red);
+  border-color: var(--ferrari-red);
+}
+
+.cover-slot {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.cover-slot .circuit-preview {
+  margin: 0;
+}
+
+.cover-slot.has-cover {
+  height: 150px;
+  overflow: hidden;
+  background: var(--bg-dark);
+}
+
+.cover-slot.has-cover .circuit-preview {
+  height: 100%;
+}
+
+.cover-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cover-credit {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.58);
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+
+.cover-modal-content {
+  max-width: 520px;
+}
+
+.cover-hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 22px;
+}
+
+.cover-hint code {
+  background: var(--bg-soft);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+.cover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.cover-field span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cover-field input {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.cover-field input:focus {
+  border-color: var(--ferrari-red);
+}
+
+.cover-preview {
+  margin-top: 6px;
+  height: 320px;
+  background: var(--bg-soft);
+  border: 1px dashed var(--border);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-preview.missing img {
+  display: none;
+}
+
+.cover-preview.missing::after {
+  content: 'Immagine non trovata — aggiungi il file al progetto';
+  color: var(--ferrari-red);
+  font-weight: 700;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.cover-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cover-save {
+  flex: 1;
+  background: var(--ferrari-red);
+  color: #fff;
+  border: 2px solid var(--ferrari-red);
+  padding: 13px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cover-save:hover {
+  background: transparent;
+  color: var(--ferrari-red);
+}
+
+.cover-clear {
+  flex: 1;
+  background: none;
+  border: 2px solid var(--border);
+  color: var(--muted);
+  padding: 13px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.cover-clear:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
 /* ============ RESPONSIVE ============ */
 
 @media (max-width: 980px) {
@@ -1040,7 +1354,7 @@ img {
   }
 
   .cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .footer-inner {

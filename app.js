@@ -1,5 +1,44 @@
 const API = 'https://api.jolpi.ca/ergast/f1';
 
+// Mappa circuitId Ergast -> id del tracciato in data/circuits.geojson.
+const CIRCUIT_MAP = {
+  albert_park: 'au-1953',
+  americas: 'us-2012',
+  bahrain: 'bh-2002',
+  baku: 'az-2016',
+  catalunya: 'es-1991',
+  hockenheimring: 'de-1932',
+  hungaroring: 'hu-1986',
+  imola: 'it-1953',
+  interlagos: 'br-1940',
+  istanbul: 'tr-2005',
+  jeddah: 'sa-2021',
+  kyalami: 'za-1961',
+  losail: 'qa-2004',
+  madring: 'es-2026',
+  marina_bay: 'sg-2008',
+  miami: 'us-2022',
+  monaco: 'mc-1929',
+  monza: 'it-1922',
+  mugello: 'it-1914',
+  nurburgring: 'de-1927',
+  paul_ricard: 'fr-1969',
+  portimao: 'pt-2008',
+  red_bull_ring: 'at-1969',
+  rodriguez: 'mx-1962',
+  sepang: 'my-1999',
+  shanghai: 'cn-2004',
+  singapore: 'sg-2008',
+  silverstone: 'gb-1948',
+  sochi: 'ru-2014',
+  spa: 'be-1925',
+  suzuka: 'jp-1962',
+  vegas: 'us-2023',
+  villeneuve: 'ca-1978',
+  yas_marina: 'ae-2009',
+  zandvoort: 'nl-1948',
+};
+
 let state = {
   year: 2026,
   races: [],
@@ -13,6 +52,142 @@ let state = {
 
 // Cache in-memoria: una volta caricata una stagione, ricambiare anno è istantaneo.
 const seasonCache = new Map();
+
+// ============ COVER ART GP ============
+// Configurazione cover art per ogni GP (percorso immagine + autore), salvata in
+// localStorage. Le immagini vere vengono aggiunte a mano nel progetto (cartella cover/).
+
+const COVER_STORAGE_KEY = 'fsa-cover-art';
+
+const ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ESCAPE_MAP[c]);
+}
+
+function loadCoverArt() {
+  try {
+    return JSON.parse(localStorage.getItem(COVER_STORAGE_KEY)) || {};
+  } catch (err) {
+    return {};
+  }
+}
+
+const coverArt = loadCoverArt(); // { [year]: { [round]: { src, author } } }
+
+function getCover(round) {
+  return coverArt[String(state.year)]?.[String(round)];
+}
+
+function raceCardHtml(race, cls) {
+  const hasSprint = !!race.Sprint?.date;
+  const feature = buildCircuitFeature(race.Circuit?.circuitId);
+  const preview = feature ? `<div class="circuit-preview">${circuitSvg(feature)}</div>` : '';
+  const cover = getCover(race.round) || {};
+  const coverImg = cover.src
+      ? `<img class="cover-art" src="${escapeHtml(cover.src)}" alt="" loading="lazy" onerror="this.remove()">`
+      : '';
+  const credit = cover.author ? `<span class="cover-credit">© ${escapeHtml(cover.author)}</span>` : '';
+  return `
+    <div class="race-card ${cls}" data-round="${race.round}">
+      <button class="cover-btn${cover.src ? ' active' : ''}" type="button" title="Cover art" aria-label="Cover art GP ${race.round}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          <circle cx="9" cy="9" r="2"></circle>
+          <path d="M21 15l-5-5L5 21"></path>
+        </svg>
+      </button>
+      <div class="cover-slot${cover.src ? ' has-cover' : ''}">
+        ${preview}
+        ${coverImg}
+        ${credit}
+      </div>
+      <div class="race-round">Round ${race.round}</div>
+      <div class="race-name">${race.raceName.replace('Grand Prix', 'GP')}${hasSprint ? ' <span class="sprint-badge">Sprint</span>' : ''}</div>
+      <div class="race-location">${race.Circuit?.circuitName || ''}</div>
+      <div class="race-date">${formatDate(race.date)}</div>
+    </div>
+  `;
+}
+
+function openCoverModal(round) {
+  const race = state.races.find(r => r.round === round);
+  if (!race) return;
+
+  const modal = document.getElementById('cover-modal');
+  const body = document.getElementById('cover-modal-body');
+  const current = getCover(round) || {};
+
+  body.innerHTML = `
+    <h2>Cover Art</h2>
+    <div class="race-meta">${escapeHtml(race.raceName)} · Round ${round}</div>
+    <p class="cover-hint">Indica il file dell'immagine che aggiungerai al progetto (verticale, 2743 × 3840). Salvala nella cartella <code>cover/</code> e inserisci qui il percorso, es. <code>cover/gp-${round}.jpg</code>.</p>
+    <label class="cover-field">
+      <span>Immagine</span>
+      <input type="text" id="cover-src" placeholder="cover/gp-${round}.jpg" value="${escapeHtml(current.src || '')}">
+    </label>
+    <label class="cover-field">
+      <span>Autore</span>
+      <input type="text" id="cover-author" placeholder="Nome dell'autore" value="${escapeHtml(current.author || '')}">
+    </label>
+    <div id="cover-preview" class="cover-preview"></div>
+    <div class="cover-actions">
+      <button class="cover-save" id="cover-save" type="button">Salva</button>
+      ${current.src || current.author ? '<button class="cover-clear" id="cover-clear" type="button">Rimuovi</button>' : ''}
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+  bindCoverPreview();
+
+  document.getElementById('cover-save').addEventListener('click', () => saveCover(round));
+  const clearBtn = document.getElementById('cover-clear');
+  if (clearBtn) clearBtn.addEventListener('click', () => clearCover(round));
+}
+
+function bindCoverPreview() {
+  const srcInput = document.getElementById('cover-src');
+  const preview = document.getElementById('cover-preview');
+  if (!srcInput || !preview) return;
+
+  const render = () => {
+    const v = srcInput.value.trim();
+    preview.classList.remove('missing');
+    if (!v) {
+      preview.innerHTML = '<span>Nessuna immagine</span>';
+      return;
+    }
+    preview.innerHTML = `<img src="${escapeHtml(v)}" onerror="this.closest('#cover-preview').classList.add('missing')">`;
+  };
+  srcInput.addEventListener('input', render);
+  render();
+}
+
+function saveCover(round) {
+  const src = document.getElementById('cover-src').value.trim();
+  const author = document.getElementById('cover-author').value.trim();
+  const y = String(state.year);
+  if (!coverArt[y]) coverArt[y] = {};
+  if (src || author) {
+    coverArt[y][String(round)] = { src, author };
+  } else {
+    delete coverArt[y][String(round)];
+  }
+  localStorage.setItem(COVER_STORAGE_KEY, JSON.stringify(coverArt));
+  closeCoverModal();
+  renderRaceCalendar();
+}
+
+function clearCover(round) {
+  const y = String(state.year);
+  if (coverArt[y]) delete coverArt[y][String(round)];
+  localStorage.setItem(COVER_STORAGE_KEY, JSON.stringify(coverArt));
+  closeCoverModal();
+  renderRaceCalendar();
+}
+
+function closeCoverModal() {
+  document.getElementById('cover-modal').classList.add('hidden');
+}
 
 async function fetchJSON(url) {
   const res = await fetch(url);
@@ -80,6 +255,202 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+// ============ TRACCIATI CIRCUITI ============
+// I layout vengono da data/circuits.geojson (dataset "f1-circuits", MIT): ogni tracciato è
+// una LineString di coordinate [lon, lat]. Qui si proietta e si disegna come SVG puro.
+
+let circuitFeatures = null;
+
+async function loadCircuits() {
+  if (circuitFeatures) return;
+  try {
+    const res = await fetch('data/circuits.geojson');
+    const data = await res.json();
+    circuitFeatures = new Map((data.features || []).map(f => [f.properties.id, f]));
+  } catch (err) {
+    console.warn('Tracciati non disponibili', err);
+    circuitFeatures = new Map();
+  }
+}
+
+function buildCircuitFeature(circuitId) {
+  if (!circuitFeatures) return null;
+  const gid = CIRCUIT_MAP[circuitId];
+  return gid ? circuitFeatures.get(gid) || null : null;
+}
+
+// Posizione delle linee di settore (S1 e S2) come frazione della distanza del giro,
+// per ciascun tracciato (chiavi = id in data/circuits.geojson). Valori approssimati
+// basati sui layout ufficiali dei settori F1.
+const SECTOR_SPLITS = {
+  'au-1953': [0.33, 0.62],
+  'bh-2002': [0.34, 0.65],
+  'cn-2004': [0.42, 0.70],
+  'jp-1962': [0.31, 0.62],
+  'us-2022': [0.33, 0.63],
+  'ca-1978': [0.30, 0.60],
+  'mc-1929': [0.33, 0.66],
+  'es-1991': [0.38, 0.70],
+  'at-1969': [0.32, 0.64],
+  'gb-1948': [0.28, 0.62],
+  'be-1925': [0.37, 0.64],
+  'hu-1986': [0.30, 0.60],
+  'nl-1948': [0.31, 0.62],
+  'it-1922': [0.30, 0.75],
+  'es-2026': [0.33, 0.66],
+  'az-2016': [0.34, 0.62],
+  'my-1999': [0.33, 0.64],
+  'sg-2008': [0.33, 0.63],
+  'us-2012': [0.34, 0.66],
+  'mx-1962': [0.33, 0.62],
+  'br-1940': [0.31, 0.62],
+  'us-2023': [0.34, 0.66],
+  'qa-2004': [0.32, 0.62],
+  'ae-2009': [0.36, 0.68],
+  'it-1953': [0.33, 0.64],
+  'fr-1969': [0.32, 0.63],
+  'pt-2008': [0.33, 0.65],
+  'tr-2005': [0.34, 0.66],
+  'ru-2014': [0.30, 0.60],
+  'de-1927': [0.30, 0.62],
+  'de-1932': [0.31, 0.64],
+  'it-1914': [0.32, 0.63],
+  'za-1961': [0.32, 0.63],
+  'sa-2021': [0.35, 0.67],
+};
+
+function circuitSvg(feature, { stroke = 1.5, start = 2.4, labels = false } = {}) {
+  const coords = feature?.geometry?.coordinates;
+  if (!coords || coords.length < 3) return '';
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  coords.forEach(([lon, lat]) => {
+    if (lon < minX) minX = lon;
+    if (lon > maxX) maxX = lon;
+    if (lat < minY) minY = lat;
+    if (lat > maxY) maxY = lat;
+  });
+
+  const w = maxX - minX;
+  const h = maxY - minY;
+  const s = Math.max(w, h) || 1;
+  const pad = 0.16;
+
+  const pts = coords.map(([lon, lat]) => [
+    (lon - minX) / s + pad,
+    (maxY - lat) / s + pad,
+  ]);
+  const viewW = w / s + pad * 2;
+  const viewH = h / s + pad * 2;
+
+  // Linea di partenza/arrivo: perpendicolare alla direzione del tracciato sul primo punto.
+  const p0 = pts[0];
+  const p1 = pts[1] || pts[pts.length - 1];
+  let mdx = p1[0] - p0[0];
+  let mdy = p1[1] - p0[1];
+  const mm = Math.hypot(mdx, mdy) || 1;
+  mdx /= mm; mdy /= mm;
+  const half = 0.045;
+  const sx1 = p0[0] - mdy * half, sy1 = p0[1] + mdx * half;
+  const sx2 = p0[0] + mdy * half, sy2 = p0[1] - mdx * half;
+
+  // ---- Settori: divide il giro in 3 archi (S1, S2, S3) in base alle frazioni ----
+  const segLen = [];
+  let total = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const d = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+    segLen.push(d);
+    total += d;
+  }
+
+  function pointAtFrac(frac) {
+    const target = frac * total;
+    let acc = 0;
+    for (let i = 0; i < segLen.length; i++) {
+      if (acc + segLen[i] >= target || i === segLen.length - 1) {
+        const t = segLen[i] ? (target - acc) / segLen[i] : 0;
+        return {
+          p: [
+            pts[i][0] + (pts[i + 1][0] - pts[i][0]) * t,
+            pts[i][1] + (pts[i + 1][1] - pts[i][1]) * t,
+          ],
+          idx: i,
+          dir: [pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]],
+        };
+      }
+      acc += segLen[i];
+    }
+    return { p: pts[pts.length - 1], idx: pts.length - 2, dir: [1, 0] };
+  }
+
+  const splitFracs = SECTOR_SPLITS[feature?.properties?.id] || [0.333, 0.667];
+  const s1 = pointAtFrac(splitFracs[0]);
+  const s2 = pointAtFrac(splitFracs[1]);
+
+  // tre archi: start→P1, P1→P2, P2→start (chiude il giro)
+  const arcA = [pts[0], ...pts.slice(1, s1.idx + 1), s1.p];
+  const arcB = [s1.p, ...pts.slice(s1.idx + 1, s2.idx + 1), s2.p];
+  const arcC = [s2.p, ...pts.slice(s2.idx + 1)];
+
+  const arcPath = arr => arr.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(3)},${p[1].toFixed(3)}`).join(' ');
+
+  function sectorLine(mark) {
+    const d = Math.hypot(mark.dir[0], mark.dir[1]) || 1;
+    const nx = -mark.dir[1] / d;
+    const ny = mark.dir[0] / d;
+    const l = 0.05;
+    const x1 = mark.p[0] + nx * l, y1 = mark.p[1] + ny * l;
+    const x2 = mark.p[0] - nx * l, y2 = mark.p[1] - ny * l;
+    return `<line x1="${x1.toFixed(3)}" y1="${y1.toFixed(3)}" x2="${x2.toFixed(3)}" y2="${y2.toFixed(3)}" class="circuit-sector-line" vector-effect="non-scaling-stroke"/>`;
+  }
+
+  function arcMidpoint(arr) {
+    let acc = 0, len = 0;
+    for (let i = 0; i < arr.length - 1; i++) {
+      len += Math.hypot(arr[i + 1][0] - arr[i][0], arr[i + 1][1] - arr[i][1]);
+    }
+    const target = len / 2;
+    for (let i = 0; i < arr.length - 1; i++) {
+      const d = Math.hypot(arr[i + 1][0] - arr[i][0], arr[i + 1][1] - arr[i][1]);
+      if (acc + d >= target || i === arr.length - 2) {
+        const t = d ? (target - acc) / d : 0;
+        const x = arr[i][0] + (arr[i + 1][0] - arr[i][0]) * t;
+        const y = arr[i][1] + (arr[i + 1][1] - arr[i][1]) * t;
+        const dx = arr[i + 1][0] - arr[i][0];
+        const dy = arr[i + 1][1] - arr[i][1];
+        const dl = Math.hypot(dx, dy) || 1;
+        return [x - dy / dl * 0.05, y + dx / dl * 0.05];
+      }
+      acc += d;
+    }
+    return arr[Math.floor(arr.length / 2)];
+  }
+
+  const midLabel = (label) => {
+    if (!labels) return '';
+    const m = arcMidpoint(label.arc);
+    return `<text x="${m[0].toFixed(3)}" y="${m[1].toFixed(3)}" class="circuit-sector-label" text-anchor="middle" dominant-baseline="middle">${label.text}</text>`;
+  };
+
+  return `
+    <svg viewBox="0 0 ${viewW.toFixed(3)} ${viewH.toFixed(3)}" preserveAspectRatio="xMidYMid meet" role="img" aria-hidden="true">
+      <path d="${arcPath(arcA)}" class="circuit-s1" stroke-width="${stroke}" vector-effect="non-scaling-stroke"/>
+      <path d="${arcPath(arcB)}" class="circuit-s2" stroke-width="${stroke}" vector-effect="non-scaling-stroke"/>
+      <path d="${arcPath(arcC)}" class="circuit-s3" stroke-width="${stroke}" vector-effect="non-scaling-stroke"/>
+      <line x1="${sx1.toFixed(3)}" y1="${sy1.toFixed(3)}" x2="${sx2.toFixed(3)}" y2="${sy2.toFixed(3)}" class="circuit-start" stroke-width="${start}" vector-effect="non-scaling-stroke"/>
+      ${sectorLine(s1)}
+      ${sectorLine(s2)}
+      ${midLabel({ arc: arcA, text: 'S1' })}
+      ${midLabel({ arc: arcB, text: 'S2' })}
+      ${midLabel({ arc: arcC, text: 'S3' })}
+    </svg>`;
+}
+
+function formatKm(meters) {
+  if (!meters) return '';
+  return (meters / 1000).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' km';
+}
+
 async function init() {
   const yearSelect = document.getElementById('year');
   getYearOptions().forEach(y => {
@@ -95,6 +466,7 @@ async function init() {
     loadSeason();
   });
 
+  await loadCircuits();
   await loadSeason();
 }
 
@@ -251,7 +623,6 @@ function renderHeroStats() {
   const ferrari = state.constructorStandings.find(c => c.Constructor?.name === 'Ferrari');
 
   let meta = ` · ${state.races.length} gare`;
-  if (ferrari) meta += ` · P${ferrari.position}ª costruttori`;
   if (metaEl) metaEl.textContent = meta;
 
   const wins = state.ferrariDrivers.reduce((a, d) => a + (parseInt(d.wins) || 0), 0);
@@ -358,33 +729,13 @@ function renderRaceCalendar() {
 
   if (past.length) {
     html += '<h3 class="section-label section-past">GP Disputati</h3><div class="race-grid">';
-    past.forEach(race => {
-      const hasSprint = !!race.Sprint?.date;
-      html += `
-        <div class="race-card race-past" data-round="${race.round}">
-          <div class="race-round">Round ${race.round}</div>
-          <div class="race-name">${race.raceName.replace('Grand Prix', 'GP')}${hasSprint ? ' <span class="sprint-badge">Sprint</span>' : ''}</div>
-          <div class="race-location">${race.Circuit?.circuitName || ''}</div>
-          <div class="race-date">${formatDate(race.date)}</div>
-        </div>
-      `;
-    });
+    past.forEach(race => { html += raceCardHtml(race, 'race-past'); });
     html += '</div>';
   }
 
   if (upcoming.length) {
     html += '<h3 class="section-label section-upcoming">GP da Disputare</h3><div class="race-grid">';
-    upcoming.forEach(race => {
-      const hasSprint = !!race.Sprint?.date;
-      html += `
-        <div class="race-card race-upcoming" data-round="${race.round}">
-          <div class="race-round">Round ${race.round}</div>
-          <div class="race-name">${race.raceName.replace('Grand Prix', 'GP')}${hasSprint ? ' <span class="sprint-badge">Sprint</span>' : ''}</div>
-          <div class="race-location">${race.Circuit?.circuitName || ''}</div>
-          <div class="race-date">${formatDate(race.date)}</div>
-        </div>
-      `;
-    });
+    upcoming.forEach(race => { html += raceCardHtml(race, 'race-upcoming'); });
     html += '</div>';
   }
 
@@ -392,6 +743,13 @@ function renderRaceCalendar() {
 
   container.querySelectorAll('.race-card.race-past').forEach(el => {
     el.addEventListener('click', () => openRaceModal(el.dataset.round));
+  });
+
+  container.querySelectorAll('.cover-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openCoverModal(btn.closest('.race-card').dataset.round);
+    });
   });
 }
 
@@ -532,9 +890,21 @@ async function openRaceModal(round) {
   const body = document.getElementById('modal-body');
   modal.classList.remove('hidden');
 
+  const feature = buildCircuitFeature(race.Circuit?.circuitId);
+  const circuitPanel = feature ? `
+    <div class="circuit-panel">
+      <div class="circuit-panel-art">${circuitSvg(feature, { stroke: 2, start: 3, labels: true })}</div>
+      <div class="circuit-panel-meta">
+        <span class="circuit-panel-name">${race.Circuit?.circuitName || ''}</span>
+        ${feature.properties?.length ? `<span class="circuit-panel-length">${formatKm(feature.properties.length)}</span>` : ''}
+      </div>
+    </div>
+  ` : '';
+
   body.innerHTML = `
     <h2>${race.raceName}</h2>
     <div class="race-meta">${race.Circuit?.circuitName || ''} · ${race.Circuit?.Location?.locality || ''} · ${formatDate(race.date)}</div>
+    ${circuitPanel}
     <div class="session-tabs" id="session-tabs">
       <button class="session-tab active" data-type="race">Gara</button>
       <button class="session-tab" data-type="qualifying">Qualifiche</button>
@@ -619,6 +989,16 @@ document.getElementById('modal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) {
     document.getElementById('modal').classList.add('hidden');
   }
+});
+
+document.getElementById('cover-modal-close').addEventListener('click', closeCoverModal);
+
+document.getElementById('cover-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeCoverModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeCoverModal();
 });
 
 document.addEventListener('DOMContentLoaded', init);
