@@ -7,13 +7,52 @@ let state = {
   constructorStandings: [],
   driverStandings: [],
   raceHistory: [],
-  raceResults: {},
+  raceResults: {},   // stats aggregati (pole/podi) per driverId
+  dataByRound: {},   // { round: { results: [], qualifying: [], sprint: [] } } — usato anche dalla modale
 };
+
+// Cache in-memoria: una volta caricata una stagione, ricambiare anno è istantaneo.
+const seasonCache = new Map();
 
 async function fetchJSON(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
   return res.json();
+}
+
+async function fetchWithRetry(url, tries = 3) {
+  for (let i = 1; i <= tries; i++) {
+    try {
+      return await fetchJSON(url);
+    } catch (e) {
+      if (i === tries) throw e;
+      await new Promise(r => setTimeout(r, 400 * i));
+    }
+  }
+}
+
+// Scarica un endpoint "a lista" (results/qualifying/sprint) gestendo la paginazione,
+// così l'intera stagione arriva in 1 (raramente 2) chiamate invece che una per round.
+async function fetchAllPages(baseUrl, pageSize = 1000) {
+  let offset = 0;
+  let allRaces = [];
+  while (true) {
+    const data = await fetchWithRetry(`${baseUrl}?limit=${pageSize}&offset=${offset}`);
+    const races = data?.MRData?.RaceTable?.Races || [];
+    allRaces = allRaces.concat(races);
+
+    const total = parseInt(data?.MRData?.total || '0', 10);
+    // Il server può applicare un limit più basso di quello richiesto (lo segnala in MRData.limit):
+    // bisogna avanzare l'offset in base a quello REALMENTE usato, non a quello chiesto.
+    const actualLimit = parseInt(data?.MRData?.limit || pageSize, 10) || pageSize;
+    const actualOffset = parseInt(data?.MRData?.offset || offset, 10);
+
+    if (races.length === 0 || actualLimit === 0) break;
+
+    offset = actualOffset + actualLimit;
+    if (offset >= total) break;
+  }
+  return allRaces;
 }
 
 function getYearOptions() {
@@ -60,29 +99,128 @@ async function init() {
 }
 
 async function loadSeason() {
+  // Stagione già vista in questa sessione: nessuna richiesta di rete, rendering immediato.
+  if (seasonCache.has(state.year)) {
+    state = { ...seasonCache.get(state.year) };
+    render();
+    return;
+  }
+
   document.querySelectorAll('.loading').forEach(el => el.textContent = '⏳ Caricamento...');
 
   try {
-    const [raceData, constructorData, driverData] = await Promise.all([
+    const [raceData, constructorData, driverData, resultsRaces, qualifyingRaces, sprintRaces] = await Promise.all([
       fetchJSON(`${API}/${state.year}.json`).catch(() => ({ MRData: { RaceTable: { Races: [] } } })),
       fetchJSON(`${API}/${state.year}/constructorStandings.json`).catch(() => ({ MRData: { StandingsTable: { StandingsLists: [] } } })),
       fetchJSON(`${API}/${state.year}/driverStandings.json`).catch(() => ({ MRData: { StandingsTable: { StandingsLists: [] } } })),
+      fetchAllPages(`${API}/${state.year}/results.json`).catch(() => []),
+      fetchAllPages(`${API}/${state.year}/qualifying.json`).catch(() => []),
+      fetchAllPages(`${API}/${state.year}/sprint.json`).catch(() => []),
     ]);
 
     state.races = extractRaces(raceData);
-    state.raceHistory = await loadStandingsHistory();
-    state.raceResults = await loadResultsHistory();
     state.constructorStandings = extractConstructorStandings(constructorData);
     state.driverStandings = extractDriverStandings(driverData);
     state.ferrariDrivers = state.driverStandings.filter(d =>
-      d.Constructors && d.Constructors.some(c => c.name === 'Ferrari')
+        d.Constructors && d.Constructors.some(c => c.name === 'Ferrari')
     );
+
+    // Raggruppa i dati bulk per round, e li tiene pronti anche per la modale (niente fetch al click).
+    state.dataByRound = buildDataByRound(resultsRaces, qualifyingRaces, sprintRaces);
+
+    state.raceResults = computeRaceStats(state.dataByRound);
+    state.raceHistory = computeStandingsHistory(state.races, state.dataByRound);
+
+    seasonCache.set(state.year, { ...state, dataByRound: { ...state.dataByRound } });
 
     render();
   } catch (err) {
     console.error(err);
     document.querySelectorAll('.loading').forEach(el => el.textContent = '❌ Errore caricamento dati');
   }
+}
+
+function buildDataByRound(resultsRaces, qualifyingRaces, sprintRaces) {
+  const byRound = {};
+
+  resultsRaces.forEach(race => {
+    const round = parseInt(race.round, 10);
+    byRound[round] = byRound[round] || {};
+    byRound[round].results = race.Results || [];
+  });
+
+  qualifyingRaces.forEach(race => {
+    const round = parseInt(race.round, 10);
+    byRound[round] = byRound[round] || {};
+    byRound[round].qualifying = race.QualifyingResults || [];
+  });
+
+  sprintRaces.forEach(race => {
+    const round = parseInt(race.round, 10);
+    byRound[round] = byRound[round] || {};
+    byRound[round].sprint = race.SprintResults || [];
+  });
+
+  return byRound;
+}
+
+// Sostituisce loadResultsHistory(): stessa logica di pole/podi, ma sui dati già scaricati in bulk.
+function computeRaceStats(dataByRound) {
+  const stats = {};
+
+  Object.values(dataByRound).forEach(({ results = [], qualifying = [] }) => {
+    const sortedRes = [...results].sort((a, b) => parseInt(a.position) - parseInt(b.position));
+    sortedRes.slice(0, 3).forEach(d => {
+      const id = d.Driver?.driverId;
+      if (!id) return;
+      if (!stats[id]) stats[id] = { poles: 0, podiums: 0 };
+      stats[id].podiums++;
+    });
+
+    const sortedQual = [...qualifying].sort((a, b) => parseInt(a.position) - parseInt(b.position));
+    if (sortedQual[0]) {
+      const id = sortedQual[0].Driver?.driverId;
+      if (id) {
+        if (!stats[id]) stats[id] = { poles: 0, podiums: 0 };
+        stats[id].poles++;
+      }
+    }
+  });
+
+  return stats;
+}
+
+// Sostituisce loadStandingsHistory(): niente chiamate a driverStandings per ogni round,
+// i punti cumulativi si calcolano dai risultati già scaricati.
+function computeStandingsHistory(races, dataByRound) {
+  const cumulative = new Map();
+  const history = [];
+
+  const sortedRaces = [...races].sort((a, b) => parseInt(a.round) - parseInt(b.round));
+
+  sortedRaces.forEach(race => {
+    const round = parseInt(race.round, 10);
+    const results = dataByRound[round]?.results;
+    if (!results || !results.length) return; // gara non ancora disputata
+
+    results.forEach(r => {
+      const id = r.Driver?.driverId;
+      if (!id) return;
+      const prev = cumulative.get(id) || {
+        Driver: r.Driver,
+        Constructors: [r.Constructor],
+        points: 0,
+      };
+      prev.points += parseFloat(r.points) || 0;
+      prev.Constructors = [r.Constructor]; // aggiorna in caso di cambio team
+      cumulative.set(id, prev);
+    });
+
+    const standings = Array.from(cumulative.values()).map(d => ({ ...d }));
+    history.push({ round, standings });
+  });
+
+  return history;
 }
 
 function render() {
@@ -99,7 +237,7 @@ function renderOverview() {
   }
 
   let html = '<div class="constructor-list">';
-  state.constructorStandings.forEach((c, i) => {
+  state.constructorStandings.forEach(c => {
     const isFerrari = c.Constructor?.name === 'Ferrari';
     html += `
       <div class="constructor-row ${isFerrari ? 'ferrari' : ''}">
@@ -207,80 +345,6 @@ function renderRaceCalendar() {
 
 const CHART_PALETTE = ['#4363d8', '#3cb44b', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe'];
 
-async function fetchWithRetry(url, tries = 3) {
-  for (let i = 1; i <= tries; i++) {
-    try {
-      return await fetchJSON(url);
-    } catch (e) {
-      if (i === tries) throw e;
-      await new Promise(r => setTimeout(r, 400 * i));
-    }
-  }
-}
-
-async function loadStandingsHistory() {
-  const queue = [...state.races];
-  const entries = [];
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < queue.length) {
-      const race = queue[cursor++];
-      try {
-        const data = await fetchWithRetry(`${API}/${state.year}/${race.round}/driverStandings.json`);
-        const list = extractDriverStandings(data);
-        if (list.length) entries.push({ round: parseInt(race.round), standings: list });
-      } catch (e) {
-        console.warn(`Nessuna classifica per round ${race.round}`, e.message);
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: 4 }, worker));
-  return entries.sort((a, b) => a.round - b.round);
-}
-
-async function loadResultsHistory() {
-  const queue = state.races.filter(r => new Date(r.date + 'T' + (r.time || '23:59:59Z')) < new Date());
-  const results = [];
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < queue.length) {
-      const race = queue[cursor++];
-      try {
-        const [resData, qualData] = await Promise.all([
-          fetchWithRetry(`${API}/${state.year}/${race.round}/results.json`),
-          fetchWithRetry(`${API}/${state.year}/${race.round}/qualifying.json`),
-        ]);
-        const raceRes = extractRaces(resData)[0]?.Results || [];
-        const qualRes = extractRaces(qualData)[0]?.QualifyingResults || [];
-        results.push({ round: parseInt(race.round), results: raceRes, qualifying: qualRes });
-      } catch (e) {
-        // skip
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: 4 }, worker));
-
-  const stats = {};
-  results.forEach(r => {
-    const sortedRes = [...r.results].sort((a, b) => parseInt(a.position) - parseInt(b.position));
-    sortedRes.slice(0, 3).forEach(d => {
-      const id = d.Driver?.driverId;
-      if (!id) return;
-      if (!stats[id]) stats[id] = { poles: 0, podiums: 0 };
-      stats[id].podiums++;
-    });
-    const sortedQual = [...r.qualifying].sort((a, b) => parseInt(a.position) - parseInt(b.position));
-    if (sortedQual[0]) {
-      const id = sortedQual[0].Driver?.driverId;
-      if (id) {
-        if (!stats[id]) stats[id] = { poles: 0, podiums: 0 };
-        stats[id].poles++;
-      }
-    }
-  });
-  return stats;
-}
-
 function buildSeries(history) {
   const drivers = new Map();
   history.forEach(entry => {
@@ -327,9 +391,9 @@ function renderPointsChart() {
   const n = state.raceHistory.length;
 
   const order = [...state.driverStandings]
-    .sort((a, b) => parseFloat(b.points) - parseFloat(a.points))
-    .map(s => s.Driver?.driverId)
-    .filter(Boolean);
+      .sort((a, b) => parseFloat(b.points) - parseFloat(a.points))
+      .map(s => s.Driver?.driverId)
+      .filter(Boolean);
 
   const selected = new Set();
   if (order[0] && drivers.has(order[0])) selected.add(order[0]);
@@ -428,75 +492,71 @@ async function openRaceModal(round) {
     <div id="session-results"></div>
   `;
 
-  await loadSessionResults(round, 'race');
+  renderSessionResults(round, 'race');
 
-  document.getElementById('session-tabs').addEventListener('click', async (e) => {
+  document.getElementById('session-tabs').addEventListener('click', (e) => {
     const tab = e.target.closest('.session-tab');
     if (!tab) return;
     document.querySelectorAll('.session-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    await loadSessionResults(round, tab.dataset.type);
+    renderSessionResults(round, tab.dataset.type);
   });
 }
 
-async function loadSessionResults(round, type) {
+// Prima faceva una fetch di rete ad ogni click sulla gara/tab: ora i dati sono già in
+// state.dataByRound (scaricati in bulk con loadSeason), quindi la modale è istantanea.
+function renderSessionResults(round, type) {
   const container = document.getElementById('session-results');
-  container.innerHTML = '<p class="loading">⏳ Caricamento risultati...</p>';
+  const roundData = state.dataByRound[parseInt(round, 10)] || {};
 
-  try {
-    const endpoint = type === 'qualifying' ? 'qualifying' : type === 'sprint' || type === 'sprint-quali' ? 'sprint' : 'results';
-    const data = await fetchJSON(`${API}/${state.year}/${round}/${endpoint}.json`);
-    const raceData = extractRaces(data)[0];
-    if (!raceData) {
-      container.innerHTML = '<p class="loading">Nessun risultato disponibile</p>';
-      return;
-    }
-
-    const resultsKey = type === 'qualifying' ? 'QualifyingResults' : type === 'sprint' ? 'SprintResults' : type === 'sprint-quali' ? 'SprintResults' : 'Results';
-    const results = raceData[resultsKey] || [];
-
-    if (!results.length) {
-      container.innerHTML = '<p class="loading">Nessun risultato disponibile</p>';
-      return;
-    }
-
-    let sorted = [...results];
-    if (type === 'sprint-quali') {
-      sorted.sort((a, b) => parseInt(a.grid) - parseInt(b.grid));
-    } else {
-      sorted.sort((a, b) => parseInt(a.position) - parseInt(b.position));
-    }
-
-    const showPoints = type === 'sprint';
-    let html = `<table class="result-table"><thead><tr><th>Pos</th><th>Pilota</th><th>Team</th>${showPoints ? '<th>Pts</th>' : ''}</tr></thead><tbody>`;
-    sorted.forEach(r => {
-      const isFerrari = r.Constructor?.name === 'Ferrari';
-      const pos = type === 'sprint-quali' ? r.grid : r.position;
-      const status = r.status || '';
-      const isFinished = status === 'Finished' || status === '' || status.startsWith('+');
-      let posHtml;
-      if (isFinished) {
-        const posClass = parseInt(pos) <= 3 ? 'podium' : '';
-        posHtml = `<td class="${posClass}">P${pos}</td>`;
-      } else {
-        const labels = { 'Retired': 'DNF', 'Disqualified': 'DSQ', 'Did not start': 'DNS', 'Excluded': 'EXC', 'Withdrew': 'WDN' };
-        const label = labels[status] || status;
-        posHtml = `<td class="status-badge status-${label.toLowerCase()}">${label}</td>`;
-      }
-      html += `
-        <tr class="${isFerrari ? 'ferrari-row' : ''}">
-          ${posHtml}
-          <td><strong>${r.Driver?.code || ''}</strong> ${r.Driver?.givenName || ''} ${r.Driver?.familyName || ''}</td>
-          <td>${r.Constructor?.name || ''}</td>
-          ${showPoints ? `<td>+${r.points || 0}</td>` : ''}
-        </tr>
-      `;
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
-  } catch (e) {
-    container.innerHTML = '<p class="loading">❌ Errore caricamento risultati</p>';
+  let results;
+  if (type === 'qualifying') {
+    results = roundData.qualifying || [];
+  } else if (type === 'sprint' || type === 'sprint-quali') {
+    results = roundData.sprint || [];
+  } else {
+    results = roundData.results || [];
   }
+
+  if (!results.length) {
+    container.innerHTML = '<p class="loading">Nessun risultato disponibile</p>';
+    return;
+  }
+
+  let sorted = [...results];
+  if (type === 'sprint-quali') {
+    sorted.sort((a, b) => parseInt(a.grid) - parseInt(b.grid));
+  } else {
+    sorted.sort((a, b) => parseInt(a.position) - parseInt(b.position));
+  }
+
+  const showPoints = type === 'sprint';
+  let html = `<table class="result-table"><thead><tr><th>Pos</th><th>Pilota</th><th>Team</th>${showPoints ? '<th>Pts</th>' : ''}</tr></thead><tbody>`;
+  sorted.forEach(r => {
+    const isFerrari = r.Constructor?.name === 'Ferrari';
+    const pos = type === 'sprint-quali' ? r.grid : r.position;
+    const status = r.status || '';
+    const isFinished = status === 'Finished' || status === '' || status.startsWith('+');
+    let posHtml;
+    if (isFinished) {
+      const posClass = parseInt(pos) <= 3 ? 'podium' : '';
+      posHtml = `<td class="${posClass}">P${pos}</td>`;
+    } else {
+      const labels = { 'Retired': 'DNF', 'Disqualified': 'DSQ', 'Did not start': 'DNS', 'Excluded': 'EXC', 'Withdrew': 'WDN' };
+      const label = labels[status] || status;
+      posHtml = `<td class="status-badge status-${label.toLowerCase()}">${label}</td>`;
+    }
+    html += `
+      <tr class="${isFerrari ? 'ferrari-row' : ''}">
+        ${posHtml}
+        <td><strong>${r.Driver?.code || ''}</strong> ${r.Driver?.givenName || ''} ${r.Driver?.familyName || ''}</td>
+        <td>${r.Constructor?.name || ''}</td>
+        ${showPoints ? `<td>+${r.points || 0}</td>` : ''}
+      </tr>
+    `;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
 document.getElementById('modal-close').addEventListener('click', () => {
