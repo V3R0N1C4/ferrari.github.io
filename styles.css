@@ -840,45 +840,16 @@ img {
   height: 100%;
 }
 
-.circuit-s1,
-.circuit-s2,
-.circuit-s3 {
+.circuit-path {
   fill: none;
+  stroke: var(--ferrari-red);
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.circuit-s1 {
-  stroke: var(--ferrari-red);
-}
-
-.circuit-s2 {
-  stroke: var(--ferrari-gold);
-}
-
-.circuit-s3 {
-  stroke: var(--ink);
 }
 
 .circuit-start {
   stroke: var(--ink);
   stroke-linecap: round;
-}
-
-.circuit-sector-line {
-  stroke: var(--ink);
-  stroke-width: 1.1;
-  stroke-dasharray: 3 3;
-  stroke-linecap: round;
-  opacity: 0.55;
-}
-
-.circuit-sector-label {
-  fill: var(--muted);
-  font-size: 0.05px;
-  font-weight: 800;
-  font-family: inherit;
-  letter-spacing: 0.05em;
 }
 
 .circuit-panel {
@@ -1156,26 +1127,27 @@ img {
 
 .cover-btn {
   position: absolute;
-  top: 14px;
+  bottom: 14px;
   right: 14px;
+  top: auto;
   z-index: 2;
   width: 34px;
   height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(16, 16, 16, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: var(--ferrari-red);
+  border: 1px solid var(--ferrari-red);
   color: #fff;
   border-radius: 3px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .cover-btn:hover,
 .cover-btn.active {
-  background: var(--ferrari-red);
-  border-color: var(--ferrari-red);
+  background: var(--ferrari-red-dark);
+  border-color: var(--ferrari-red-dark);
 }
 
 .cover-slot {

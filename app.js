@@ -91,9 +91,10 @@ function raceCardHtml(race, cls) {
     <div class="race-card ${cls}" data-round="${race.round}">
       <button class="cover-btn${cover.src ? ' active' : ''}" type="button" title="Cover art" aria-label="Cover art GP ${race.round}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-          <circle cx="9" cy="9" r="2"></circle>
-          <path d="M21 15l-5-5L5 21"></path>
+          <path d="M12 22a10 10 0 1 1 10-10c0 1.7-1.1 3.2-2.6 3.6l-3.2 1.4c-.6.3-1 .9-1 1.6 0 .8-.6 1.4-1.4 1.4H12z"></path>
+          <circle cx="7.5" cy="10.5" r="1"></circle>
+          <circle cx="12" cy="7.5" r="1"></circle>
+          <circle cx="16.5" cy="10.5" r="1"></circle>
         </svg>
       </button>
       <div class="cover-slot${cover.src ? ' has-cover' : ''}">
@@ -279,47 +280,7 @@ function buildCircuitFeature(circuitId) {
   return gid ? circuitFeatures.get(gid) || null : null;
 }
 
-// Posizione delle linee di settore (S1 e S2) come frazione della distanza del giro,
-// per ciascun tracciato (chiavi = id in data/circuits.geojson). Valori approssimati
-// basati sui layout ufficiali dei settori F1.
-const SECTOR_SPLITS = {
-  'au-1953': [0.33, 0.62],
-  'bh-2002': [0.34, 0.65],
-  'cn-2004': [0.42, 0.70],
-  'jp-1962': [0.31, 0.62],
-  'us-2022': [0.33, 0.63],
-  'ca-1978': [0.30, 0.60],
-  'mc-1929': [0.33, 0.66],
-  'es-1991': [0.38, 0.70],
-  'at-1969': [0.32, 0.64],
-  'gb-1948': [0.28, 0.62],
-  'be-1925': [0.37, 0.64],
-  'hu-1986': [0.30, 0.60],
-  'nl-1948': [0.31, 0.62],
-  'it-1922': [0.30, 0.75],
-  'es-2026': [0.33, 0.66],
-  'az-2016': [0.34, 0.62],
-  'my-1999': [0.33, 0.64],
-  'sg-2008': [0.33, 0.63],
-  'us-2012': [0.34, 0.66],
-  'mx-1962': [0.33, 0.62],
-  'br-1940': [0.31, 0.62],
-  'us-2023': [0.34, 0.66],
-  'qa-2004': [0.32, 0.62],
-  'ae-2009': [0.36, 0.68],
-  'it-1953': [0.33, 0.64],
-  'fr-1969': [0.32, 0.63],
-  'pt-2008': [0.33, 0.65],
-  'tr-2005': [0.34, 0.66],
-  'ru-2014': [0.30, 0.60],
-  'de-1927': [0.30, 0.62],
-  'de-1932': [0.31, 0.64],
-  'it-1914': [0.32, 0.63],
-  'za-1961': [0.32, 0.63],
-  'sa-2021': [0.35, 0.67],
-};
-
-function circuitSvg(feature, { stroke = 1.5, start = 2.4, labels = false } = {}) {
+function circuitSvg(feature, { stroke = 1.5, start = 2.4 } = {}) {
   const coords = feature?.geometry?.coordinates;
   if (!coords || coords.length < 3) return '';
 
@@ -354,95 +315,13 @@ function circuitSvg(feature, { stroke = 1.5, start = 2.4, labels = false } = {})
   const sx1 = p0[0] - mdy * half, sy1 = p0[1] + mdx * half;
   const sx2 = p0[0] + mdy * half, sy2 = p0[1] - mdx * half;
 
-  // ---- Settori: divide il giro in 3 archi (S1, S2, S3) in base alle frazioni ----
-  const segLen = [];
-  let total = 0;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const d = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
-    segLen.push(d);
-    total += d;
-  }
-
-  function pointAtFrac(frac) {
-    const target = frac * total;
-    let acc = 0;
-    for (let i = 0; i < segLen.length; i++) {
-      if (acc + segLen[i] >= target || i === segLen.length - 1) {
-        const t = segLen[i] ? (target - acc) / segLen[i] : 0;
-        return {
-          p: [
-            pts[i][0] + (pts[i + 1][0] - pts[i][0]) * t,
-            pts[i][1] + (pts[i + 1][1] - pts[i][1]) * t,
-          ],
-          idx: i,
-          dir: [pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]],
-        };
-      }
-      acc += segLen[i];
-    }
-    return { p: pts[pts.length - 1], idx: pts.length - 2, dir: [1, 0] };
-  }
-
-  const splitFracs = SECTOR_SPLITS[feature?.properties?.id] || [0.333, 0.667];
-  const s1 = pointAtFrac(splitFracs[0]);
-  const s2 = pointAtFrac(splitFracs[1]);
-
-  // tre archi: start→P1, P1→P2, P2→start (chiude il giro)
-  const arcA = [pts[0], ...pts.slice(1, s1.idx + 1), s1.p];
-  const arcB = [s1.p, ...pts.slice(s1.idx + 1, s2.idx + 1), s2.p];
-  const arcC = [s2.p, ...pts.slice(s2.idx + 1)];
-
+  // ---- Tracciato completo: una sola linea continua ----
   const arcPath = arr => arr.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(3)},${p[1].toFixed(3)}`).join(' ');
-
-  function sectorLine(mark) {
-    const d = Math.hypot(mark.dir[0], mark.dir[1]) || 1;
-    const nx = -mark.dir[1] / d;
-    const ny = mark.dir[0] / d;
-    const l = 0.05;
-    const x1 = mark.p[0] + nx * l, y1 = mark.p[1] + ny * l;
-    const x2 = mark.p[0] - nx * l, y2 = mark.p[1] - ny * l;
-    return `<line x1="${x1.toFixed(3)}" y1="${y1.toFixed(3)}" x2="${x2.toFixed(3)}" y2="${y2.toFixed(3)}" class="circuit-sector-line" vector-effect="non-scaling-stroke"/>`;
-  }
-
-  function arcMidpoint(arr) {
-    let acc = 0, len = 0;
-    for (let i = 0; i < arr.length - 1; i++) {
-      len += Math.hypot(arr[i + 1][0] - arr[i][0], arr[i + 1][1] - arr[i][1]);
-    }
-    const target = len / 2;
-    for (let i = 0; i < arr.length - 1; i++) {
-      const d = Math.hypot(arr[i + 1][0] - arr[i][0], arr[i + 1][1] - arr[i][1]);
-      if (acc + d >= target || i === arr.length - 2) {
-        const t = d ? (target - acc) / d : 0;
-        const x = arr[i][0] + (arr[i + 1][0] - arr[i][0]) * t;
-        const y = arr[i][1] + (arr[i + 1][1] - arr[i][1]) * t;
-        const dx = arr[i + 1][0] - arr[i][0];
-        const dy = arr[i + 1][1] - arr[i][1];
-        const dl = Math.hypot(dx, dy) || 1;
-        return [x - dy / dl * 0.05, y + dx / dl * 0.05];
-      }
-      acc += d;
-    }
-    return arr[Math.floor(arr.length / 2)];
-  }
-
-  const midLabel = (label) => {
-    if (!labels) return '';
-    const m = arcMidpoint(label.arc);
-    return `<text x="${m[0].toFixed(3)}" y="${m[1].toFixed(3)}" class="circuit-sector-label" text-anchor="middle" dominant-baseline="middle">${label.text}</text>`;
-  };
 
   return `
     <svg viewBox="0 0 ${viewW.toFixed(3)} ${viewH.toFixed(3)}" preserveAspectRatio="xMidYMid meet" role="img" aria-hidden="true">
-      <path d="${arcPath(arcA)}" class="circuit-s1" stroke-width="${stroke}" vector-effect="non-scaling-stroke"/>
-      <path d="${arcPath(arcB)}" class="circuit-s2" stroke-width="${stroke}" vector-effect="non-scaling-stroke"/>
-      <path d="${arcPath(arcC)}" class="circuit-s3" stroke-width="${stroke}" vector-effect="non-scaling-stroke"/>
+      <path d="${arcPath(pts)}" class="circuit-path" stroke-width="${stroke}" vector-effect="non-scaling-stroke"/>
       <line x1="${sx1.toFixed(3)}" y1="${sy1.toFixed(3)}" x2="${sx2.toFixed(3)}" y2="${sy2.toFixed(3)}" class="circuit-start" stroke-width="${start}" vector-effect="non-scaling-stroke"/>
-      ${sectorLine(s1)}
-      ${sectorLine(s2)}
-      ${midLabel({ arc: arcA, text: 'S1' })}
-      ${midLabel({ arc: arcB, text: 'S2' })}
-      ${midLabel({ arc: arcC, text: 'S3' })}
     </svg>`;
 }
 
