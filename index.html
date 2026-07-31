@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ferrari Season Analyzer</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <div class="logo">
+      <svg viewBox="0 0 40 40" width="40" height="40">
+        <rect x="4" y="10" width="32" height="20" rx="2" fill="#DC0000"/>
+        <text x="20" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="#FFF" font-family="serif">SF</text>
+      </svg>
+      <h1>Ferrari Season Analyzer</h1>
+    </div>
+    <div class="year-selector">
+      <label for="year">Stagione</label>
+      <select id="year"></select>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="overview">
+    <div class="card">
+      <h2>Classifica Costruttori</h2>
+      <div id="constructor-standings"><p class="loading">Caricamento...</p></div>
+    </div>
+    <div class="card">
+      <h2>Piloti Ferrari</h2>
+      <div id="ferrari-drivers"><p class="loading">Caricamento...</p></div>
+    </div>
+  </section>
+
+  <section id="chart-section">
+    <h2>Andamento Punti Piloti</h2>
+    <div class="card chart-card">
+      <div id="chart-legend"></div>
+      <div id="points-chart"><p class="loading">⏳ Caricamento...</p></div>
+    </div>
+  </section>
+
+  <section id="calendar">
+    <h2>Calendario Gare</h2>
+    <div id="race-list"><p class="loading">Caricamento...</p></div>
+  </section>
+</main>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <button class="modal-close" id="modal-close">&times;</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

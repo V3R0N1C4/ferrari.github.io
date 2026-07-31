@@ -1,0 +1,574 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --ferrari-red: #DC0000;
+  --ferrari-dark: #8B0000;
+  --ferrari-gold: #FFD700;
+  --bg: #0a0a0a;
+  --bg-card: #1a1a1a;
+  --bg-card-hover: #222;
+  --text: #e0e0e0;
+  --text-muted: #888;
+  --border: #333;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  background: linear-gradient(135deg, #1a0000 0%, #2a0000 100%);
+  border-bottom: 2px solid var(--ferrari-red);
+  padding: 1rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.year-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.year-selector label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.year-selector select {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 1rem 0.4rem 0.75rem;
+  font-size: 1rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.year-selector select:focus {
+  border-color: var(--ferrari-red);
+}
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+#overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.card h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.loading {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.constructor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.constructor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.constructor-row.ferrari {
+  background: rgba(220, 0, 0, 0.12);
+  border: 1px solid rgba(220, 0, 0, 0.3);
+  font-weight: 600;
+}
+
+.constructor-pos {
+  color: var(--text-muted);
+  min-width: 1.5rem;
+}
+
+.constructor-name {
+  flex: 1;
+  margin-left: 0.5rem;
+}
+
+.constructor-pts {
+  font-weight: 600;
+  color: var(--ferrari-gold);
+}
+
+.driver-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(220, 0, 0, 0.08);
+  border: 1px solid rgba(220, 0, 0, 0.2);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.driver-card:last-child {
+  margin-bottom: 0;
+}
+
+.driver-number {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ferrari-red);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.driver-info {
+  flex: 1;
+}
+
+.driver-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.driver-stat {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.driver-pts {
+  font-weight: 700;
+  color: var(--ferrari-gold);
+  font-size: 1.125rem;
+}
+
+#chart-section {
+  margin-bottom: 1.5rem;
+}
+
+#chart-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.chart-card {
+  overflow-x: auto;
+}
+
+#chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legend-name {
+  font-weight: 600;
+}
+
+.legend-name.ferrari {
+  color: var(--ferrari-gold);
+}
+
+.legend-pts {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 420px;
+}
+
+.grid-line {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.axis-line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.axis-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+
+.line-ferrari {
+  filter: drop-shadow(0 0 6px rgba(220, 0, 0, 0.45));
+}
+
+.chart-caption {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+#calendar h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.race-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0.75rem;
+}
+
+.race-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.race-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--ferrari-red);
+  transform: translateY(-1px);
+}
+
+.race-card.race-past {
+  border-left: 3px solid var(--ferrari-red);
+}
+
+.race-card.race-upcoming {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.race-card.race-upcoming:hover {
+  transform: none;
+  border-color: var(--border);
+}
+
+.progress-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--ferrari-red);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.section-label {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+.section-past {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.section-upcoming {
+  color: var(--text-muted);
+  background: rgba(136, 136, 136, 0.08);
+}
+
+.race-round {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.race-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0.25rem 0;
+}
+
+.race-location {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.race-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.sprint-badge {
+  display: inline-block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--ferrari-red);
+  color: #fff;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text);
+}
+
+.modal h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.modal .race-meta {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+.session-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.session-tab {
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  transition: all 0.15s;
+}
+
+.session-tab:hover {
+  border-color: var(--ferrari-red);
+  color: var(--text);
+}
+
+.session-tab.active {
+  background: var(--ferrari-red);
+  border-color: var(--ferrari-red);
+  color: #fff;
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.result-table th {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+.result-table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #222;
+}
+
+.result-table tr.ferrari-row {
+  background: rgba(220, 0, 0, 0.1);
+  font-weight: 600;
+}
+
+.result-table tr.ferrari-row td {
+  border-bottom-color: rgba(220, 0, 0, 0.2);
+}
+
+.podium {
+  color: var(--ferrari-gold);
+  font-weight: 700;
+}
+
+.status-badge {
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+.status-dnf {
+  color: #f87171;
+}
+
+.status-dsq {
+  color: #fb923c;
+}
+
+.status-dns {
+  color: #a78bfa;
+}
+
+.status-wdn {
+  color: #a78bfa;
+}
+
+.status-exc {
+  color: #fb923c;
+}
+
+@media (max-width: 700px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  #overview {
+    grid-template-columns: 1fr;
+  }
+  .race-grid {
+    grid-template-columns: 1fr;
+  }
+}
