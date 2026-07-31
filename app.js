@@ -280,6 +280,8 @@ async function loadResultsHistory() {
   });
   return stats;
 }
+
+function buildSeries(history) {
   const drivers = new Map();
   history.forEach(entry => {
     entry.standings.forEach(s => {
