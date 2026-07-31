@@ -143,22 +143,25 @@ async function loadSeason() {
 function buildDataByRound(resultsRaces, qualifyingRaces, sprintRaces) {
   const byRound = {};
 
+  // Una gara può comparire più volte nell'elenco se i suoi risultati sono stati
+  // spezzati su due pagine dell'API (il confine di pagina è per riga, non per gara):
+  // qui uniamo sempre invece di sovrascrivere, altrimenti si perde metà dei punti.
   resultsRaces.forEach(race => {
     const round = parseInt(race.round, 10);
     byRound[round] = byRound[round] || {};
-    byRound[round].results = race.Results || [];
+    byRound[round].results = (byRound[round].results || []).concat(race.Results || []);
   });
 
   qualifyingRaces.forEach(race => {
     const round = parseInt(race.round, 10);
     byRound[round] = byRound[round] || {};
-    byRound[round].qualifying = race.QualifyingResults || [];
+    byRound[round].qualifying = (byRound[round].qualifying || []).concat(race.QualifyingResults || []);
   });
 
   sprintRaces.forEach(race => {
     const round = parseInt(race.round, 10);
     byRound[round] = byRound[round] || {};
-    byRound[round].sprint = race.SprintResults || [];
+    byRound[round].sprint = (byRound[round].sprint || []).concat(race.SprintResults || []);
   });
 
   return byRound;
@@ -198,12 +201,8 @@ function computeStandingsHistory(races, dataByRound) {
 
   const sortedRaces = [...races].sort((a, b) => parseInt(a.round) - parseInt(b.round));
 
-  sortedRaces.forEach(race => {
-    const round = parseInt(race.round, 10);
-    const results = dataByRound[round]?.results;
-    if (!results || !results.length) return; // gara non ancora disputata
-
-    results.forEach(r => {
+  const addPoints = (entries) => {
+    entries.forEach(r => {
       const id = r.Driver?.driverId;
       if (!id) return;
       const prev = cumulative.get(id) || {
@@ -215,6 +214,17 @@ function computeStandingsHistory(races, dataByRound) {
       prev.Constructors = [r.Constructor]; // aggiorna in caso di cambio team
       cumulative.set(id, prev);
     });
+  };
+
+  sortedRaces.forEach(race => {
+    const round = parseInt(race.round, 10);
+    const results = dataByRound[round]?.results;
+    const sprint = dataByRound[round]?.sprint || [];
+    if (!results || !results.length) return; // gara non ancora disputata
+
+    // I punti della Sprint sono un endpoint separato dai punti della gara: vanno sommati entrambi.
+    addPoints(sprint);
+    addPoints(results);
 
     const standings = Array.from(cumulative.values()).map(d => ({ ...d }));
     history.push({ round, standings });
