@@ -1,217 +1,612 @@
-calendar*, *::before, *::after {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
 :root {
-  --ferrari-red: #DC0000;
-  --ferrari-dark: #8B0000;
-  --ferrari-gold: #FFD700;
-  --bg: #0a0a0a;
-  --bg-card: #1a1a1a;
-  --bg-card-hover: #222;
-  --text: #e0e0e0;
-  --text-muted: #888;
-  --border: #333;
+  --ferrari-red: #D40000;
+  --ferrari-red-dark: #A30000;
+  --ferrari-yellow: #FFD900;
+  --ferrari-gold: #C89700;
+  --ink: #101010;
+  --muted: #6E6E6E;
+  --border: #E3E3DF;
+  --border-soft: #EFEFED;
+  --bg: #FFFFFF;
+  --bg-soft: #F4F4F2;
+  --bg-dark: #000000;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
   background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
+  color: var(--ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-header {
-  background: linear-gradient(135deg, #1a0000 0%, #2a0000 100%);
-  border-bottom: 2px solid var(--ferrari-red);
-  padding: 1rem 1.5rem;
+section[id] {
+  scroll-margin-top: 76px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ============ HEADER ============ */
+
+.site-header {
+  background: var(--bg-dark);
+  color: #fff;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.header-content {
-  max-width: 1100px;
+.header-inner {
+  max-width: 1480px;
   margin: 0 auto;
+  padding: 0 28px;
+  height: 68px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 28px;
 }
 
-.logo {
+.hamburger {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 10px 6px;
 }
 
-.logo h1 {
-  font-size: 1.25rem;
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #fff;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.hamburger:hover span {
+  background: var(--ferrari-yellow);
+}
+
+.hamburger.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+.nav-links {
+  display: flex;
+  gap: 30px;
+}
+
+.nav-link {
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.year-selector {
+.nav-link:hover {
+  color: var(--ferrari-yellow);
+}
+
+.brand {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 14px;
 }
 
-.year-selector label {
-  font-size: 0.875rem;
-  color: var(--text-muted);
+.brand-shield {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 54px;
+  flex-shrink: 0;
 }
 
-.year-selector select {
-  background: var(--bg-card);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.4rem 1rem 0.4rem 0.75rem;
-  font-size: 1rem;
+.brand-shield img {
+  width: 100%;
+  height: auto;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.brand-sub {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.year-select {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.year-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select-wrap::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(255, 255, 255, 0.7);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.7);
+  transform: rotate(45deg) translateY(-2px);
+  pointer-events: none;
+}
+
+.year-select select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #141414;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+  padding: 9px 38px 9px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   cursor: pointer;
   outline: none;
+  transition: border-color 0.15s ease;
 }
 
-.year-selector select:focus {
+.year-select select:hover,
+.year-select select:focus {
   border-color: var(--ferrari-red);
 }
 
-main {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 1.5rem;
+.year-select option {
+  background: #141414;
+  color: #fff;
 }
 
-#overview {
+/* ============ MEGA MENU ============ */
+
+.mega-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-dark);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: none;
+  padding-bottom: 8px;
+}
+
+.mega-menu.open {
+  display: block;
+  animation: megaIn 0.18s ease;
+}
+
+@keyframes megaIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mega-inner {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 34px 28px 30px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+}
+
+.mega-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ferrari-yellow);
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.mega-link {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.82);
+  padding: 7px 0;
+  transition: color 0.15s ease, padding-left 0.15s ease;
+}
+
+.mega-link:hover {
+  color: var(--ferrari-red);
+  padding-left: 6px;
+}
+
+/* ============ HERO ============ */
+
+.hero {
+  position: relative;
+  background: var(--bg-dark);
+  color: #fff;
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-glow {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -30%;
+  height: 80%;
+  background:
+          radial-gradient(ellipse 70% 90% at 78% 115%, rgba(212, 0, 0, 0.55), transparent 62%),
+          radial-gradient(ellipse 55% 70% at 20% 130%, rgba(212, 0, 0, 0.28), transparent 60%);
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, transparent 10%, #000 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 10%, #000 70%, transparent 100%);
+}
+
+.hero-content {
+  position: relative;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 110px 28px 96px;
+}
+
+.hero-pretitle {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--ferrari-yellow);
+  margin-bottom: 22px;
+}
+
+.hero-title {
+  font-size: clamp(48px, 8.5vw, 108px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.015em;
+  line-height: 0.94;
+}
+
+.hero-accent {
+  color: var(--ferrari-yellow);
+}
+
+.hero-sub {
+  margin-top: 26px;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.hero-sub #hero-year {
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.hero-cta {
+  display: inline-block;
+  margin-top: 44px;
+  background: var(--ferrari-red);
+  color: #fff;
+  padding: 17px 46px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border: 2px solid var(--ferrari-red);
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.hero-cta:hover {
+  background: transparent;
+  color: var(--ferrari-red);
+}
+
+.hero-stats {
+  position: relative;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 28px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.stat {
+  padding: 30px 8px 34px;
+}
+
+.stat + .stat {
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.stat-value {
+  font-size: clamp(30px, 3.6vw, 46px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.stat-label {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ============ SECTIONS ============ */
+
+.section {
+  padding: 88px 0;
+}
+
+.section-alt {
+  background: var(--bg-soft);
+}
+
+.content {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.section-head {
+  margin-bottom: 44px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ferrari-red);
+  margin-bottom: 12px;
+}
+
+.section-head h2 {
+  font-size: clamp(28px, 4vw, 46px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 1.02;
+}
+
+.cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 28px;
 }
 
 .card {
-  background: var(--bg-card);
+  background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1.25rem;
+  padding: 34px 34px 24px;
 }
 
-.card h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-muted);
+.card-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
+  color: var(--muted);
+  margin-bottom: 26px;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
 }
 
 .loading {
-  color: var(--text-muted);
-  font-size: 0.875rem;
+  color: var(--muted);
+  font-size: 14px;
 }
+
+/* ============ CONSTRUCTOR STANDINGS ============ */
 
 .constructor-list {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
 }
 
 .constructor-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.4rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  align-items: baseline;
+  gap: 18px;
+  padding: 13px 6px;
+  font-size: 15px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.constructor-row:last-child {
+  border-bottom: 0;
 }
 
 .constructor-row.ferrari {
-  background: rgba(220, 0, 0, 0.12);
-  border: 1px solid rgba(220, 0, 0, 0.3);
-  font-weight: 600;
+  position: relative;
+  background: rgba(212, 0, 0, 0.05);
+  margin: 0 -34px;
+  padding: 13px 34px;
+  border-bottom: 1px solid rgba(212, 0, 0, 0.08);
+}
+
+.constructor-row.ferrari::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--ferrari-red);
 }
 
 .constructor-pos {
-  color: var(--text-muted);
-  min-width: 1.5rem;
+  font-weight: 800;
+  color: var(--muted);
+  min-width: 30px;
+  font-size: 14px;
 }
 
 .constructor-name {
   flex: 1;
-  margin-left: 0.5rem;
+  font-weight: 600;
+}
+
+.constructor-row.ferrari .constructor-name {
+  font-weight: 800;
 }
 
 .constructor-pts {
-  font-weight: 600;
-  color: var(--ferrari-gold);
+  font-weight: 800;
+  font-size: 16px;
 }
+
+.constructor-row.ferrari .constructor-pts {
+  color: var(--ferrari-red);
+}
+
+/* ============ FERRARI DRIVERS ============ */
 
 .driver-card {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: rgba(220, 0, 0, 0.08);
-  border: 1px solid rgba(220, 0, 0, 0.2);
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
+  gap: 20px;
+  padding: 18px 6px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .driver-card:last-child {
-  margin-bottom: 0;
+  border-bottom: 0;
 }
 
 .driver-number {
-  width: 32px;
-  height: 32px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--ferrari-red);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.875rem;
-  border-radius: 50%;
+  border: 2px solid var(--ink);
+  font-size: 18px;
+  font-weight: 900;
   flex-shrink: 0;
+  border-radius: 2px;
 }
 
 .driver-info {
   flex: 1;
+  min-width: 0;
 }
 
 .driver-name {
-  font-weight: 600;
-  font-size: 0.9375rem;
+  font-size: 21px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .driver-stat {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 3px;
 }
 
 .driver-pts {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.driver-pts .driver-pts-unit {
+  font-size: 12px;
   font-weight: 700;
-  color: var(--ferrari-gold);
-  font-size: 1.125rem;
+  color: var(--muted);
+  margin-left: 3px;
 }
 
-#chart-section {
-  margin-bottom: 1.5rem;
-}
-
-#chart-section h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 1rem;
-}
+/* ============ CHART ============ */
 
 .chart-card {
   overflow-x: auto;
@@ -220,213 +615,293 @@ main {
 #chart-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 1.25rem;
-  margin-bottom: 1rem;
+  gap: 10px 34px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  font-size: 0.8125rem;
+  gap: 10px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
 .legend-swatch {
   width: 14px;
   height: 14px;
-  border-radius: 3px;
+  border-radius: 2px;
   flex-shrink: 0;
 }
 
 .legend-name {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .legend-name.ferrari {
-  color: var(--ferrari-gold);
+  color: var(--ferrari-red);
 }
 
 .legend-pts {
-  color: var(--text-muted);
-  font-size: 0.75rem;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .chart {
   display: block;
   width: 100%;
   height: auto;
-  min-width: 420px;
+  min-width: 520px;
 }
 
 .grid-line {
-  stroke: var(--border);
+  stroke: #E9E9E6;
   stroke-width: 1;
-  stroke-dasharray: 3 3;
+  stroke-dasharray: 3 4;
 }
 
 .axis-line {
-  stroke: var(--border);
+  stroke: #DCDCD8;
   stroke-width: 1;
 }
 
 .axis-label {
-  fill: var(--text-muted);
+  fill: var(--muted);
   font-size: 11px;
+  font-family: inherit;
 }
 
 .line-ferrari {
-  filter: drop-shadow(0 0 6px rgba(220, 0, 0, 0.45));
+  filter: drop-shadow(0 0 5px rgba(212, 0, 0, 0.35));
 }
 
 .chart-caption {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 0.5rem;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 16px;
+  letter-spacing: 0.02em;
 }
 
-#calendar h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 1rem;
-}
-
-.race-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 0.75rem;
-}
-
-.race-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.race-card:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--ferrari-red);
-  transform: translateY(-1px);
-}
-
-.race-card.race-past {
-  border-left: 3px solid var(--ferrari-red);
-}
-
-.race-card.race-upcoming {
-  opacity: 0.65;
-  cursor: default;
-}
-
-.race-card.race-upcoming:hover {
-  transform: none;
-  border-color: var(--border);
-}
+/* ============ CALENDAR ============ */
 
 .progress-bar-container {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  gap: 20px;
+  margin-bottom: 44px;
 }
 
 .progress-bar {
   flex: 1;
-  height: 6px;
+  height: 5px;
   background: var(--border);
-  border-radius: 3px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
   background: var(--ferrari-red);
-  border-radius: 3px;
-  transition: width 0.3s ease;
+  transition: width 0.4s ease;
 }
 
 .progress-label {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
   white-space: nowrap;
-  font-weight: 600;
 }
 
 .section-label {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  margin-bottom: 26px;
+}
+
+.section-label::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .section-past {
-  color: #4ade80;
-  background: rgba(74, 222, 128, 0.08);
+  color: var(--ink);
+}
+
+.section-past::before {
+  background: var(--ferrari-red);
 }
 
 .section-upcoming {
-  color: var(--text-muted);
-  background: rgba(136, 136, 136, 0.08);
+  color: var(--muted);
+  margin-top: 44px;
+}
+
+.section-upcoming::before {
+  background: var(--border);
+}
+
+.race-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 2px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.race-card {
+  background: var(--bg);
+  padding: 26px 28px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.race-card:hover {
+  background: #FBFBF9;
+}
+
+.race-card.race-past:hover {
+  transform: translateY(-2px);
+}
+
+.race-card.race-upcoming {
+  cursor: default;
+  opacity: 0.55;
 }
 
 .race-round {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.race-card.race-past .race-round {
+  color: var(--ferrari-red);
 }
 
 .race-name {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0.25rem 0;
-}
-
-.race-location {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-}
-
-.race-date {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 0.25rem;
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  margin: 12px 0 4px;
 }
 
 .sprint-badge {
   display: inline-block;
-  font-size: 0.625rem;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   background: var(--ferrari-red);
   color: #fff;
-  padding: 0.1rem 0.45rem;
-  border-radius: 3px;
-  margin-left: 0.4rem;
-  vertical-align: middle;
+  padding: 3px 8px;
+  border-radius: 2px;
+  margin-left: 8px;
+  vertical-align: 2px;
 }
 
+.race-location {
+  font-size: 13px;
+  color: var(--muted);
+}
 
+.race-date {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
 
-/* Modal */
+/* ============ FOOTER ============ */
+
+.site-footer {
+  background: var(--bg-dark);
+  color: #fff;
+}
+
+.footer-inner {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 64px 28px 40px;
+  display: flex;
+  justify-content: space-between;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.footer-brand .brand-sub {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.footer-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 64px;
+}
+
+.footer-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ferrari-yellow);
+  margin-bottom: 18px;
+}
+
+.footer-link {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 5px 0;
+  transition: color 0.15s ease;
+}
+
+.footer-link:hover {
+  color: var(--ferrari-red);
+}
+
+.footer-legal {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 22px 28px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.footer-legal p + p {
+  margin-top: 4px;
+}
+
+/* ============ MODAL ============ */
+
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.78);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
-  padding: 1rem;
+  z-index: 700;
+  padding: 24px;
 }
 
 .modal.hidden {
@@ -434,141 +909,252 @@ main {
 }
 
 .modal-content {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  max-width: 700px;
+  background: #fff;
+  color: var(--ink);
   width: 100%;
-  max-height: 80vh;
+  max-width: 780px;
+  max-height: 84vh;
   overflow-y: auto;
-  padding: 1.5rem;
   position: relative;
+  border-top: 4px solid var(--ferrari-red);
+  padding: 40px 44px 32px;
 }
 
 .modal-close {
   position: absolute;
-  top: 0.75rem;
-  right: 1rem;
+  top: 14px;
+  right: 20px;
   background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 1.5rem;
-  cursor: pointer;
+  border: 0;
+  color: var(--ink);
+  font-size: 30px;
+  font-weight: 300;
   line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s ease;
 }
 
 .modal-close:hover {
-  color: var(--text);
+  color: var(--ferrari-red);
 }
 
 .modal h2 {
-  font-size: 1.25rem;
-  margin-bottom: 0.25rem;
+  font-size: clamp(22px, 3.4vw, 32px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
 }
 
 .modal .race-meta {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-  margin-bottom: 1.25rem;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 26px;
 }
 
 .session-tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
 }
 
 .session-tab {
-  padding: 0.4rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
+  padding: 12px 20px;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
   cursor: pointer;
-  font-size: 0.8125rem;
-  transition: all 0.15s;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .session-tab:hover {
-  border-color: var(--ferrari-red);
-  color: var(--text);
+  color: var(--ink);
 }
 
 .session-tab.active {
-  background: var(--ferrari-red);
-  border-color: var(--ferrari-red);
-  color: #fff;
+  color: var(--ink);
+  border-bottom-color: var(--ferrari-red);
 }
 
 .result-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: 14px;
 }
 
 .result-table th {
   text-align: left;
-  padding: 0.4rem 0.5rem;
-  color: var(--text-muted);
-  font-weight: 600;
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
   border-bottom: 1px solid var(--border);
 }
 
 .result-table td {
-  padding: 0.4rem 0.5rem;
-  border-bottom: 1px solid #222;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+
+.result-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .result-table tr.ferrari-row {
-  background: rgba(220, 0, 0, 0.1);
-  font-weight: 600;
+  background: rgba(212, 0, 0, 0.05);
+  font-weight: 700;
 }
 
 .result-table tr.ferrari-row td {
-  border-bottom-color: rgba(220, 0, 0, 0.2);
+  border-bottom-color: rgba(212, 0, 0, 0.1);
 }
 
 .podium {
-  color: var(--ferrari-gold);
-  font-weight: 700;
+  color: var(--ferrari-red);
+  font-weight: 800;
 }
 
 .status-badge {
-  font-weight: 700;
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.08em;
 }
 
-.status-dnf {
-  color: #f87171;
-}
+.status-dnf { color: #C0392B; }
+.status-dsq { color: #D35400; }
+.status-dns { color: #8E44AD; }
+.status-wdn { color: #8E44AD; }
+.status-exc { color: #D35400; }
 
-.status-dsq {
-  color: #fb923c;
-}
+/* ============ RESPONSIVE ============ */
 
-.status-dns {
-  color: #a78bfa;
-}
-
-.status-wdn {
-  color: #a78bfa;
-}
-
-.status-exc {
-  color: #fb923c;
-}
-
-@media (max-width: 700px) {
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
+@media (max-width: 980px) {
+  .nav-links {
+    display: none;
   }
-  #overview {
+
+  .cards {
     grid-template-columns: 1fr;
   }
+
+  .footer-inner {
+    flex-direction: column;
+  }
+
+  .mega-inner {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+@media (max-width: 720px) {
+  .header-inner {
+    padding: 0 18px;
+    gap: 14px;
+    height: 62px;
+  }
+
+  .brand-text {
+    display: none;
+  }
+
+  .brand {
+    justify-content: flex-start;
+    flex: 0 1 auto;
+    margin-right: auto;
+  }
+
+  .year-label {
+    display: none;
+  }
+
+  .hero-content {
+    padding: 72px 18px 64px;
+  }
+
+  .hero-title {
+    font-size: 46px;
+  }
+
+  .hero-cta {
+    margin-top: 32px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .hero-stats {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 0 18px;
+  }
+
+  .stat {
+    padding: 22px 6px 26px;
+  }
+
+  .stat:nth-child(3) {
+    border-left: 0;
+  }
+
+  .stat:nth-child(odd) + .stat {
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .stat:nth-child(3),
+  .stat:nth-child(4) {
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .stat:nth-child(3) + .stat {
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .section {
+    padding: 64px 0;
+  }
+
+  .content {
+    padding: 0 18px;
+  }
+
+  .card {
+    padding: 26px 20px 20px;
+  }
+
+  .constructor-row.ferrari {
+    margin: 0 -20px;
+    padding: 13px 20px;
+  }
+
   .race-grid {
     grid-template-columns: 1fr;
   }
+
+  .footer-cols {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  .modal-content {
+    padding: 32px 22px 24px;
+  }
+
+  .result-table {
+    font-size: 13px;
+  }
+}
+
+.logo-icon {
+  height: 40px;
+  width: auto;
 }

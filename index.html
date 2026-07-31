@@ -1,54 +1,172 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ferrari Season Analyzer</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ferrari Season Analyzer</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<header>
-  <div class="header-content">
-    <div class="logo">
-      <svg viewBox="0 0 40 40" width="40" height="40">
-        <rect x="4" y="10" width="32" height="20" rx="2" fill="#DC0000"/>
-        <text x="20" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="#FFF" font-family="serif">SF</text>
-      </svg>
-      <h1>Ferrari Season Analyzer</h1>
+<header class="site-header">
+  <div class="header-inner">
+    <button class="hamburger" id="menu-toggle" aria-label="Apri il menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav-links" aria-label="Navigazione principale">
+      <a href="#standings" class="nav-link" data-mega="true">Racing</a>
+      <a href="#chart" class="nav-link">Scuderia Ferrari HP</a>
+      <a href="#calendar" class="nav-link">Calendario</a>
+    </nav>
+
+    <a class="brand" href="#top" aria-label="Ferrari Season Analyzer">
+      <span class="brand-shield">
+        <img src="assets/logo-white.svg" alt="">
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">Scuderia Ferrari</span>
+        <span class="brand-sub">Season Analyzer</span>
+      </span>
+    </a>
+
+    <div class="header-actions">
+      <label class="year-select" for="year">
+        <span class="year-label">Stagione</span>
+        <span class="select-wrap">
+          <select id="year" aria-label="Seleziona la stagione"></select>
+        </span>
+      </label>
     </div>
-    <div class="year-selector">
-      <label for="year">Stagione</label>
-      <select id="year"></select>
+  </div>
+
+  <div class="mega-menu" id="mega-menu" aria-hidden="true">
+    <div class="mega-inner">
+      <div class="mega-col">
+        <h5 class="mega-title">Racing</h5>
+        <a href="#standings" class="mega-link">Scuderia Ferrari HP</a>
+        <a href="#standings" class="mega-link">Charles Leclerc</a>
+        <a href="#standings" class="mega-link">Lewis Hamilton</a>
+        <a href="#calendar" class="mega-link">Gare</a>
+        <a href="#chart" class="mega-link">Andamento punti</a>
+      </div>
+      <div class="mega-col">
+        <h5 class="mega-title">Analisi Stagione</h5>
+        <a href="#standings" class="mega-link">Classifica Costruttori</a>
+        <a href="#standings" class="mega-link">Piloti</a>
+        <a href="#chart" class="mega-link">Punti per round</a>
+        <a href="#calendar" class="mega-link">Calendario gare</a>
+      </div>
+      <div class="mega-col">
+        <h5 class="mega-title">La Scuderia</h5>
+        <a href="#top" class="mega-link">Storia</a>
+        <a href="#top" class="mega-link">News</a>
+        <a href="#top" class="mega-link">Media Gallery</a>
+        <a href="#top" class="mega-link">Partner</a>
+      </div>
     </div>
   </div>
 </header>
 
-<main>
-  <section id="overview">
-    <div class="card">
-      <h2>Classifica Costruttori</h2>
-      <div id="constructor-standings"><p class="loading">Caricamento...</p></div>
+<main id="top">
+  <section class="hero">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="hero-glow"></div>
+      <div class="hero-grid"></div>
     </div>
-    <div class="card">
-      <h2>Piloti Ferrari</h2>
-      <div id="ferrari-drivers"><p class="loading">Caricamento...</p></div>
+    <div class="hero-content">
+      <p class="hero-pretitle">Racing · Formula 1</p>
+      <h1 class="hero-title">Scuderia <span class="hero-accent">Ferrari</span></h1>
+      <p class="hero-sub">Stagione <span id="hero-year">—</span><span id="hero-meta"></span></p>
+      <a href="#calendar" class="hero-cta">Esplora il calendario</a>
+    </div>
+    <div class="hero-stats" id="hero-stats"></div>
+  </section>
+
+  <section id="standings" class="section">
+    <div class="content">
+      <div class="section-head">
+        <p class="eyebrow">Classifica</p>
+        <h2>Classifica Costruttori</h2>
+      </div>
+      <div class="cards">
+        <div class="card">
+          <h3 class="card-title">Classifica Costruttori</h3>
+          <div id="constructor-standings"><p class="loading">Caricamento...</p></div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Piloti Ferrari</h3>
+          <div id="ferrari-drivers"><p class="loading">Caricamento...</p></div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section id="chart-section">
-    <h2>Andamento Punti Piloti</h2>
-    <div class="card chart-card">
-      <div id="chart-legend"></div>
-      <div id="points-chart"><p class="loading">⏳ Caricamento...</p></div>
+  <section id="chart" class="section section-alt">
+    <div class="content">
+      <div class="section-head">
+        <p class="eyebrow">Analisi</p>
+        <h2>Andamento Punti Piloti</h2>
+      </div>
+      <div class="card chart-card">
+        <div id="chart-legend"></div>
+        <div id="points-chart"><p class="loading">Caricamento...</p></div>
+      </div>
     </div>
   </section>
 
-  <section id="calendar">
-    <h2>Calendario Gare</h2>
-    <div id="race-list"><p class="loading">Caricamento...</p></div>
+  <section id="calendar" class="section">
+    <div class="content">
+      <div class="section-head">
+        <p class="eyebrow">Stagione</p>
+        <h2>Calendario Gare</h2>
+      </div>
+      <div id="race-list"><p class="loading">Caricamento...</p></div>
+    </div>
   </section>
 </main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <a class="footer-brand" href="#top" aria-label="Ferrari Season Analyzer">
+      <span class="brand-shield">
+        <img src="assets/logo-white.svg" alt="">
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">Scuderia Ferrari</span>
+        <span class="brand-sub">Season Analyzer</span>
+      </span>
+    </a>
+    <div class="footer-cols">
+      <div class="footer-col">
+        <h5 class="footer-title">Racing</h5>
+        <a href="#standings" class="footer-link">Scuderia Ferrari HP</a>
+        <a href="#calendar" class="footer-link">Gare</a>
+        <a href="#chart" class="footer-link">Andamento</a>
+      </div>
+      <div class="footer-col">
+        <h5 class="footer-title">La Scuderia</h5>
+        <a href="#standings" class="footer-link">Charles Leclerc</a>
+        <a href="#standings" class="footer-link">Lewis Hamilton</a>
+        <a href="#standings" class="footer-link">Piloti</a>
+      </div>
+      <div class="footer-col">
+        <h5 class="footer-title">Il Progetto</h5>
+        <a href="#top" class="footer-link">Season Analyzer</a>
+        <a href="#chart" class="footer-link">Grafico punti</a>
+        <a href="#calendar" class="footer-link">Calendario</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-legal">
+    <p>© 2026 Scuderia Ferrari Season Analyzer · Progetto indipendente di analisi dati F1</p>
+    <p>Dati © Ergast Developer API · api.jolpi.ca</p>
+  </div>
+</footer>
 
 <div id="modal" class="modal hidden">
   <div class="modal-content">

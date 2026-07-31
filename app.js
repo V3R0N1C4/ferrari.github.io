@@ -234,9 +234,51 @@ function computeStandingsHistory(races, dataByRound) {
 }
 
 function render() {
+  renderHeroStats();
   renderOverview();
   renderPointsChart();
   renderRaceCalendar();
+}
+
+function renderHeroStats() {
+  const yearEl = document.getElementById('hero-year');
+  const metaEl = document.getElementById('hero-meta');
+  const statsEl = document.getElementById('hero-stats');
+  if (!statsEl) return;
+
+  if (yearEl) yearEl.textContent = state.year;
+
+  const ferrari = state.constructorStandings.find(c => c.Constructor?.name === 'Ferrari');
+
+  let meta = ` · ${state.races.length} gare`;
+  if (ferrari) meta += ` · P${ferrari.position}ª costruttori`;
+  if (metaEl) metaEl.textContent = meta;
+
+  const wins = state.ferrariDrivers.reduce((a, d) => a + (parseInt(d.wins) || 0), 0);
+  let podiums = 0;
+  let poles = 0;
+  state.ferrariDrivers.forEach(d => {
+    const s = state.raceResults[d.Driver?.driverId] || {};
+    podiums += s.podiums || 0;
+    poles += s.poles || 0;
+  });
+  const pts = ferrari
+      ? parseFloat(ferrari.points) || 0
+      : state.ferrariDrivers.reduce((a, d) => a + (parseFloat(d.points) || 0), 0);
+
+  const stats = [
+    { value: ferrari ? `P${ferrari.position}ª` : '—', label: 'Posizione' },
+    { value: pts, label: 'Punti' },
+    { value: wins, label: 'Vittorie' },
+    { value: podiums, label: 'Podi' },
+  ];
+
+  statsEl.innerHTML = stats.map(s => `
+    <div class="stat">
+      <div class="stat-value">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>
+  `).join('');
 }
 
 function renderOverview() {
@@ -281,7 +323,7 @@ function renderOverview() {
           <div class="driver-name">${given} ${family}</div>
           <div class="driver-stat">${wins} vittorie · ${s.poles} pole · ${s.podiums} podi · Pos. ${d.position}</div>
         </div>
-        <div class="driver-pts">${d.points} pt</div>
+        <div class="driver-pts">${d.points}<span class="driver-pts-unit">pt</span></div>
       </div>
     `;
   });
@@ -353,7 +395,7 @@ function renderRaceCalendar() {
   });
 }
 
-const CHART_PALETTE = ['#4363d8', '#3cb44b', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe'];
+const CHART_PALETTE = ['#1f77b4', '#2ca02c', '#ff7f0e', '#9467bd', '#17becf', '#e377c2', '#bcbd22', '#8c564b'];
 
 function buildSeries(history) {
   const drivers = new Map();
@@ -430,7 +472,7 @@ function renderPointsChart() {
 
   const colorFor = id => {
     const d = drivers.get(id);
-    if (d.isFerrari) return d.code === state.ferrariDrivers[0]?.Driver?.code ? '#DC0000' : '#FFD700';
+    if (d.isFerrari) return d.code === state.ferrariDrivers[0]?.Driver?.code ? '#D40000' : '#C89700';
     return CHART_PALETTE[selectedList.indexOf(id) % CHART_PALETTE.length];
   };
 
@@ -466,7 +508,7 @@ function renderPointsChart() {
     const isFerrari = d.isFerrari;
     return `
       <polyline points="${pts}" fill="none" stroke="${dotColor}" stroke-width="${isFerrari ? 3.2 : 2.2}" stroke-linecap="round" stroke-linejoin="round" class="${isFerrari ? 'line-ferrari' : ''}"/>
-      <circle cx="${x(last)}" cy="${y(d.series[last])}" r="${isFerrari ? 5 : 4}" fill="${dotColor}" stroke="#1a1a1a" stroke-width="1.5"/>
+      <circle cx="${x(last)}" cy="${y(d.series[last])}" r="${isFerrari ? 5 : 4}" fill="${dotColor}" stroke="#fff" stroke-width="1.5"/>
     `;
   }).join('');
 
@@ -580,3 +622,42 @@ document.getElementById('modal').addEventListener('click', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ============ MEGA MENU ============
+
+const menuToggle = document.getElementById('menu-toggle');
+const megaMenu = document.getElementById('mega-menu');
+const navMegaTrigger = document.querySelector('[data-mega="true"]');
+
+function setMenu(open) {
+  if (!menuToggle || !megaMenu) return;
+  menuToggle.classList.toggle('open', open);
+  menuToggle.setAttribute('aria-expanded', String(open));
+  megaMenu.classList.toggle('open', open);
+  megaMenu.setAttribute('aria-hidden', String(!open));
+}
+
+if (menuToggle && megaMenu) {
+  menuToggle.addEventListener('click', () => {
+    setMenu(!megaMenu.classList.contains('open'));
+  });
+
+  megaMenu.addEventListener('click', e => {
+    if (e.target.closest('.mega-link')) setMenu(false);
+  });
+
+  document.addEventListener('click', e => {
+    if (megaMenu.classList.contains('open') &&
+        !e.target.closest('.site-header')) {
+      setMenu(false);
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') setMenu(false);
+  });
+}
+
+if (navMegaTrigger && megaMenu) {
+  navMegaTrigger.addEventListener('mouseenter', () => setMenu(true));
+}
