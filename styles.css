@@ -357,9 +357,15 @@ img {
   font-size: 18px;
 }
 
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 44px;
+}
+
 .hero-cta {
   display: inline-block;
-  margin-top: 44px;
   background: var(--ferrari-red);
   color: #fff;
   padding: 17px 46px;
@@ -374,6 +380,34 @@ img {
 .hero-cta:hover {
   background: transparent;
   color: var(--ferrari-red);
+}
+
+.next-countdown {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-left: 28px;
+  vertical-align: baseline;
+}
+
+.next-countdown.hidden {
+  display: none;
+}
+
+.next-countdown .cd-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.next-countdown .cd-val {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--ferrari-yellow);
+  font-variant-numeric: tabular-nums;
 }
 
 .hero-stats {
@@ -1374,6 +1408,29 @@ img {
     text-align: center;
   }
 
+  .hero-actions {
+    margin-top: 32px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions .hero-cta {
+    margin-top: 0;
+  }
+
+  .next-countdown {
+    margin-top: 20px;
+    margin-left: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    text-align: center;
+  }
+
+  .next-countdown .cd-val {
+    font-size: 22px;
+  }
+
   .hero-stats {
     grid-template-columns: repeat(2, 1fr);
     padding: 0 18px;
@@ -1433,4 +1490,44 @@ img {
   .result-table {
     font-size: 13px;
   }
+}
+/* ============ SPLASH SCREEN ============ */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.splash.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.splash.leaving {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.splash-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.splash-logo {
+  width: clamp(70px, 14vw, 140px);
+  height: auto;
+  animation: splash-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes splash-pulse {
+  0%, 100% { opacity: 0; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.03); }
 }

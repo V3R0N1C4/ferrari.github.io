@@ -357,6 +357,7 @@ async function loadSeason() {
     return;
   }
 
+  showSplash();
   document.querySelectorAll('.loading').forEach(el => el.textContent = '⏳ Caricamento...');
 
   try {
@@ -385,10 +386,26 @@ async function loadSeason() {
     seasonCache.set(state.year, { ...state, dataByRound: { ...state.dataByRound } });
 
     render();
+    hideSplash();
   } catch (err) {
     console.error(err);
     document.querySelectorAll('.loading').forEach(el => el.textContent = '❌ Errore caricamento dati');
+    hideSplash();
   }
+}
+
+function showSplash() {
+  const el = document.getElementById('splash');
+  if (!el) return;
+  el.classList.add('visible');
+  el.classList.remove('leaving');
+}
+
+function hideSplash() {
+  const el = document.getElementById('splash');
+  if (!el) return;
+  el.classList.add('leaving');
+  setTimeout(() => el.classList.remove('visible'), 420);
 }
 
 function buildDataByRound(resultsRaces, qualifyingRaces, sprintRaces) {
@@ -489,6 +506,47 @@ function render() {
   renderOverview();
   renderPointsChart();
   renderRaceCalendar();
+  renderNextCountdown();
+}
+
+let countdownTimer = null;
+
+function renderNextCountdown() {
+  const el = document.getElementById('next-countdown');
+  if (!el) return;
+
+  const now = new Date();
+  const upcoming = state.races
+      .filter(race => new Date(race.date + 'T' + (race.time || '23:59:59Z')) > now)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (!upcoming.length) {
+    el.classList.add('hidden');
+    el.textContent = '';
+    return;
+  }
+
+  const next = upcoming[0];
+  const target = new Date(next.date + 'T' + (next.time || '23:59:59Z'));
+  const name = next.raceName.replace('Grand Prix', 'GP');
+
+  el.classList.remove('hidden');
+
+  const tick = () => {
+    const diff = target - new Date();
+    if (diff <= 0) { renderNextCountdown(); return; }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    el.innerHTML = `
+      <span class="cd-label">Prossimo GP · ${escapeHtml(name)}</span>
+      <span class="cd-val">${d}d ${h}h ${m}m ${s}s</span>`;
+  };
+
+  tick();
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(tick, 1000);
 }
 
 function renderHeroStats() {

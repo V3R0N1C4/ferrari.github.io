@@ -12,6 +12,12 @@
 </head>
 <body>
 
+<div id="splash" class="splash">
+  <div class="splash-inner">
+    <img src="assets\logo-white.svg" alt="Ferrari" class="splash-logo">
+  </div>
+</div>
+
 <header class="site-header">
   <div class="header-inner">
     <button class="hamburger" id="menu-toggle" aria-label="Apri il menu" aria-expanded="false">
@@ -82,7 +88,10 @@
       <p class="hero-pretitle">Racing · Formula 1</p>
       <h1 class="hero-title">Scuderia <span class="hero-accent">Ferrari</span></h1>
       <p class="hero-sub">Stagione <span id="hero-year">—</span><span id="hero-meta"></span></p>
-      <a href="#calendar" class="hero-cta">Esplora il calendario</a>
+      <div class="hero-actions">
+        <a href="#calendar" class="hero-cta">Esplora il calendario</a>
+        <div id="next-countdown" class="next-countdown hidden"></div>
+      </div>
     </div>
     <div class="hero-stats" id="hero-stats"></div>
   </section>
