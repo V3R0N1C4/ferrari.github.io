@@ -793,7 +793,9 @@ function renderPointsChart() {
   for (let i = 0; i < n; i++) {
     if (n > 16 && i % 2 !== 0) continue;
     const round = state.raceHistory[i].round;
-    xlabels += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" class="axis-label axis-round" data-round="${round}">${round}</text>`;
+    const race = state.races.find(r => parseInt(r.round, 10) === round);
+    const gpName = race ? race.raceName.replace('Grand Prix', 'GP') : `Round ${round}`;
+    xlabels += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" class="axis-label axis-round" data-round="${round}" data-name="${escapeHtml(gpName)}">${round}</text>`;
   }
 
   const lines = selectedList.map(id => {
@@ -817,14 +819,26 @@ function renderPointsChart() {
       ${lines}
     </svg>
     <div class="chart-caption">Punti cumulativi per round · ${state.year}</div>
+    <div class="chart-tooltip" id="chart-tooltip" aria-hidden="true"></div>
   `;
 
+  const tooltip = document.getElementById('chart-tooltip');
   container.querySelectorAll('.axis-round').forEach(el => {
     el.style.cursor = 'pointer';
     el.addEventListener('click', () => {
       const round = el.dataset.round;
       openRaceModal(round);
     });
+    el.addEventListener('mouseenter', () => {
+      tooltip.textContent = el.dataset.name || '';
+      tooltip.classList.add('visible');
+    });
+    el.addEventListener('mousemove', ev => {
+      const svg = container.querySelector('svg').getBoundingClientRect();
+      tooltip.style.left = (ev.clientX - svg.left) + 'px';
+      tooltip.style.top = (ev.clientY - svg.top - 30) + 'px';
+    });
+    el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
   });
 }
 

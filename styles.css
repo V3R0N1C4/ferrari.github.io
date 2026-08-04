@@ -575,18 +575,36 @@ img {
 /* ============ FERRARI DRIVERS ============ */
 
 .driver-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 18px 6px;
+  margin: 0 -34px;
+  padding: 18px 34px;
   border-bottom: 1px solid var(--border-soft);
-  color: inherit;
+  color: var(--ferrari-red);
   text-decoration: none;
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
+.driver-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--ferrari-red);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
 .driver-card:hover {
   background: rgba(212, 0, 0, 0.05);
+}
+
+.driver-card:hover::before {
+  opacity: 1;
 }
 
 .driver-card:hover,
@@ -594,11 +612,11 @@ img {
 .driver-card:hover .driver-number,
 .driver-card:hover .driver-stat,
 .driver-card:hover .driver-pts {
-  color: inherit;
+  color: --ferrari-red;
 }
 
 .driver-card:hover .driver-number {
-  border-color: #inherit;
+  border-color: --ferrari-red;
 }
 
 .driver-card:last-child {
@@ -743,6 +761,30 @@ img {
   color: var(--muted);
   margin-top: 16px;
   letter-spacing: 0.02em;
+}
+
+#points-chart {
+  position: relative;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  padding: 6px 10px;
+  background: #16161A;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 2px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -100%);
+  transition: opacity 0.12s ease;
+}
+
+.chart-tooltip.visible {
+  opacity: 1;
 }
 
 /* ============ CALENDAR ============ */
@@ -1506,6 +1548,11 @@ img {
     padding: 13px 20px;
   }
 
+  .driver-card {
+    margin: 0 -20px;
+    padding: 18px 20px;
+  }
+
   .race-grid {
     grid-template-columns: 1fr;
   }
@@ -1521,6 +1568,33 @@ img {
 
   .result-table {
     font-size: 13px;
+  }
+
+  .hero-driver .hero-stats {
+    grid-template-columns: repeat(6, 1fr);
+    padding: 0 6px;
+  }
+
+  .hero-driver .stat {
+    padding: 18px 4px 22px;
+  }
+
+  .hero-driver .stat + .stat {
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .hero-driver .stat:nth-child(3),
+  .hero-driver .stat:nth-child(4) {
+    border-top: 0;
+  }
+
+  .hero-driver .stat-value {
+    font-size: clamp(18px, 5vw, 30px);
+  }
+
+  .hero-driver .stat-label {
+    font-size: 8px;
+    letter-spacing: 0.12em;
   }
 }
 /* ============ SPLASH SCREEN ============ */
@@ -1596,11 +1670,15 @@ img {
 }
 
 @keyframes loader-horse {
-  0%, 100% { opacity: 0.55; transform: translateY(4px) scale(0.97); }
+  0%, 100% { opacity: 0.06; transform: translateY(4px) scale(0.97); }
   50% { opacity: 1; transform: translateY(-4px) scale(1.02); }
 }
 
 /* ============ DRIVER CAREER PAGE ============ */
+.hero-driver .hero-stats {
+  grid-template-columns: repeat(6, 1fr);
+}
+
 .header-back {
   font-size: 12px;
   font-weight: 800;

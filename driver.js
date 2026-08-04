@@ -45,6 +45,13 @@ function findDriver(races) {
   return null;
 }
 
+function hideLoader() {
+  const loader = document.getElementById('page-loader');
+  if (!loader) return;
+  loader.classList.remove('active');
+  loader.setAttribute('aria-hidden', 'true');
+}
+
 async function init() {
   const nameEl = document.getElementById('driver-name');
   const codeEl = document.getElementById('driver-code');
@@ -54,6 +61,7 @@ async function init() {
 
   if (!DRIVER_ID) {
     nameEl.textContent = 'Nessun pilota selezionato';
+    hideLoader();
     return;
   }
 
@@ -66,6 +74,7 @@ async function init() {
     const driver = findDriver(resultsRaces) || findDriver(qualiRaces);
     if (!driver) {
       nameEl.textContent = 'Pilota non trovato';
+      hideLoader();
       return;
     }
 
@@ -143,6 +152,7 @@ async function init() {
     // ---- Tabella stagioni ----
     if (!seasonList.length) {
       seasonsEl.innerHTML = '<p class="loading">Nessun dato disponibile</p>';
+      hideLoader();
       return;
     }
 
@@ -163,16 +173,9 @@ async function init() {
     console.error(err);
     nameEl.textContent = 'Errore caricamento dati';
   }
-}
-
-function hideLoader() {
-  const loader = document.getElementById('page-loader');
-  if (!loader) return;
-  loader.classList.remove('active');
-  loader.setAttribute('aria-hidden', 'true');
+  hideLoader();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   init();
-  setTimeout(hideLoader, 300);
 });
