@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carriera Pilota</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="page-loader" class="page-loader active" aria-hidden="false">
+  <div class="page-loader-inner">
+    <img src="logo-white.svg" alt="Cavallino" class="page-loader-horse">
+    <div class="page-loader-spinner"></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="header-back" href="index.html#standings" aria-label="Torna all'analisi">&larr; Analisi</a>
+    <a class="brand" href="index.html" aria-label="Ferrari Season Analyzer">
+      <span class="brand-shield">
+        <img src="logo-white.svg" alt="">
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">Scuderia Ferrari</span>
+        <span class="brand-sub">Season Analyzer</span>
+      </span>
+    </a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero hero-driver">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="hero-glow"></div>
+      <div class="hero-grid"></div>
+    </div>
+    <div class="hero-content">
+      <p class="hero-pretitle" id="driver-code">—</p>
+      <h1 class="hero-title" id="driver-name">Caricamento...</h1>
+      <p class="hero-sub" id="driver-nationality">—</p>
+    </div>
+    <div class="hero-stats" id="driver-stats"></div>
+  </section>
+
+  <section class="section">
+    <div class="content">
+      <div class="section-head">
+        <p class="eyebrow">Carriera</p>
+        <h2>Stagioni</h2>
+      </div>
+      <div class="card" id="driver-seasons"><p class="loading">Caricamento...</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <a class="footer-brand" href="index.html" aria-label="Ferrari Season Analyzer">
+      <span class="brand-shield">
+        <img src="logo-white.svg" alt="">
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">Scuderia Ferrari</span>
+        <span class="brand-sub">Season Analyzer</span>
+      </span>
+    </a>
+  </div>
+  <div class="footer-legal">
+    <p>Dati © Ergast Developer API · api.jolpi.ca</p>
+  </div>
+</footer>
+
+<script type="module" src="driver.js"></script>
+</body>
+</html>

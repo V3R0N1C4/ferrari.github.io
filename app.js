@@ -625,14 +625,14 @@ function renderOverview() {
     const id = d.Driver?.driverId;
     const s = state.raceResults[id] || { poles: 0, podiums: 0 };
     dhtml += `
-      <div class="driver-card">
+      <a class="driver-card" href="driver.html?id=${escapeHtml(id)}">
         <div class="driver-number">${num || '?'}</div>
         <div class="driver-info">
           <div class="driver-name">${given} ${family}</div>
           <div class="driver-stat">${wins} vittorie · ${s.poles} pole · ${s.podiums} podi · Pos. ${d.position}</div>
         </div>
         <div class="driver-pts">${d.points}<span class="driver-pts-unit">pt</span></div>
-      </div>
+      </a>
     `;
   });
   driverContainer.innerHTML = dhtml;
@@ -792,7 +792,8 @@ function renderPointsChart() {
   let xlabels = '';
   for (let i = 0; i < n; i++) {
     if (n > 16 && i % 2 !== 0) continue;
-    xlabels += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" class="axis-label">${state.raceHistory[i].round}</text>`;
+    const round = state.raceHistory[i].round;
+    xlabels += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" class="axis-label axis-round" data-round="${round}">${round}</text>`;
   }
 
   const lines = selectedList.map(id => {
@@ -817,6 +818,14 @@ function renderPointsChart() {
     </svg>
     <div class="chart-caption">Punti cumulativi per round · ${state.year}</div>
   `;
+
+  container.querySelectorAll('.axis-round').forEach(el => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => {
+      const round = el.dataset.round;
+      openRaceModal(round);
+    });
+  });
 }
 
 async function openRaceModal(round) {
@@ -890,7 +899,8 @@ function renderSessionResults(round, type) {
   }
 
   const showPoints = type === 'sprint';
-  let html = `<table class="result-table"><thead><tr><th>Pos</th><th>Pilota</th><th>Team</th>${showPoints ? '<th>Pts</th>' : ''}</tr></thead><tbody>`;
+  const showGrid = type !== 'qualifying';
+  let html = `<table class="result-table"><thead><tr><th>Pos</th>${showGrid ? '<th>Griglia</th>' : ''}<th>Pilota</th><th>Team</th><th>Tempo</th>${showPoints ? '<th>Pts</th>' : ''}</tr></thead><tbody>`;
   sorted.forEach(r => {
     const isFerrari = r.Constructor?.name === 'Ferrari';
     const pos = type === 'sprint-quali' ? r.grid : r.position;
@@ -905,11 +915,16 @@ function renderSessionResults(round, type) {
       const label = labels[status] || status;
       posHtml = `<td class="status-badge status-${label.toLowerCase()}">${label}</td>`;
     }
+    const timeHtml = type === 'qualifying'
+        ? (r.Q3 || r.Q2 || r.Q1 || '')
+        : (r.Time?.time || '');
     html += `
       <tr class="${isFerrari ? 'ferrari-row' : ''}">
         ${posHtml}
+        ${showGrid ? `<td>${r.grid || ''}</td>` : ''}
         <td><strong>${r.Driver?.code || ''}</strong> ${r.Driver?.givenName || ''} ${r.Driver?.familyName || ''}</td>
         <td>${r.Constructor?.name || ''}</td>
+        <td>${timeHtml}</td>
         ${showPoints ? `<td>+${r.points || 0}</td>` : ''}
       </tr>
     `;
@@ -939,6 +954,26 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ============ PAGE TRANSITION LOADER ============
+
+const pageLoader = document.getElementById('page-loader');
+
+function showLoader() {
+  if (!pageLoader) return;
+  pageLoader.setAttribute('aria-hidden', 'false');
+  pageLoader.classList.add('active');
+}
+
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('a.driver-card');
+  if (!link) return;
+  e.preventDefault();
+  const href = link.getAttribute('href');
+  if (!href) return;
+  showLoader();
+  setTimeout(() => { window.location.href = href; }, 350);
+});
 
 // ============ MEGA MENU ============
 
