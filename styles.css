@@ -2215,3 +2215,48 @@ img {
   padding: 2px 6px;
   border-radius: 2px;
 }
+
+/* ---- Banner "Aggiungi alla Home" (PWA) ---- */
+.pwa-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-dark);
+  color: #fff;
+  border-radius: 14px;
+  border-bottom: 3px solid var(--ferrari-red);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  font-family: inherit;
+}
+.pwa-banner-icon { width: 44px; height: 44px; border-radius: 10px; flex: none; }
+.pwa-banner-text { margin: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.35; }
+.pwa-banner-text strong { font-size: 14px; font-weight: 700; }
+.pwa-banner-text span { color: rgba(255, 255, 255, 0.78); }
+.pwa-banner-actions { display: flex; align-items: center; gap: 4px; flex: none; }
+.pwa-banner-install {
+  background: var(--ferrari-red);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pwa-banner-install:active { background: var(--ferrari-red-dark); }
+.pwa-banner-close {
+  background: none;
+  border: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 24px;
+  line-height: 1;
+  padding: 4px 8px;
+  cursor: pointer;
+}
