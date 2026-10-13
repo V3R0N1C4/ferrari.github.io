@@ -1,5 +1,15 @@
-const API = 'https://api.jolpi.ca/ergast/f1';
+const driverRoute = new URLSearchParams(location.search).get('driver');
 
+if (driverRoute) {
+  const response = await fetch('driver.html');
+  if (!response.ok) throw new Error(`Impossibile caricare la pagina pilota: HTTP ${response.status}`);
+  const driverDocument = new DOMParser().parseFromString(await response.text(), 'text/html');
+  driverDocument.body.querySelectorAll('script').forEach(script => script.remove());
+  document.title = driverDocument.title;
+  document.body.innerHTML = driverDocument.body.innerHTML;
+  await import('./driver.js');
+} else {
+const API = 'https://api.jolpi.ca/ergast/f1';
 // Mappa circuitId Ergast -> id del tracciato in data/circuits.geojson.
 const CIRCUIT_MAP = {
   albert_park: 'au-1953',
@@ -58,6 +68,22 @@ const seasonCache = new Map();
 // localStorage. Le immagini vere vengono aggiunte a mano nel progetto (cartella cover/).
 
 const COVER_STORAGE_KEY = 'fsa-cover-art';
+const COVER_COLLECTION = 'cover_art';
+
+// Il socket del database websim non è disponibile fuori dal frame websim (es.
+// anteprime senza host): in quel caso l'app continua a funzionare con localStorage.
+let room = null;
+async function getRoom() {
+  if (room) return room;
+  try {
+    const { WebsimSocket } = await import('@websim/websim-socket');
+    room = new WebsimSocket();
+    return room;
+  } catch (err) {
+    console.warn('Database websim non disponibile, uso localStorage', err);
+    return null;
+  }
+}
 
 const ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 function escapeHtml(s) {
@@ -72,7 +98,41 @@ function loadCoverArt() {
   }
 }
 
-const coverArt = loadCoverArt(); // { [year]: { [round]: { src, author } } }
+let coverArt = loadCoverArt(); // { [year]: { [round]: { src, author, tweetUrl } } }
+
+// Carica le cover art dal database websim (fonte di verità condivisa tra tutti)
+// e le fonde con quelle salvate localmente. Se il database non risponde entro
+// qualche secondo (es. assenza di host websim) si ripiega su localStorage.
+async function loadCoverArtFromDb() {
+  const db = await getRoom();
+  if (!db) return;
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000));
+  try {
+    const records = await Promise.race([db.collection(COVER_COLLECTION).getList(), timeout]);
+    const dbArt = {};
+    records.forEach(r => {
+      const y = r.year;
+      if (!dbArt[y]) dbArt[y] = {};
+      dbArt[y][String(r.round)] = {
+        src: r.src || '',
+        author: r.author || '',
+        tweetUrl: r.tweetUrl || '',
+      };
+    });
+    // Il DB vince, ma tiene anche le voci locali non ancora sincronizzate.
+    coverArt = { ...dbArt };
+    const local = loadCoverArt();
+    Object.keys(local).forEach(y => {
+      if (!coverArt[y]) coverArt[y] = {};
+      Object.keys(local[y] || {}).forEach(r => {
+        if (!coverArt[y][r]) coverArt[y][r] = local[y][r];
+      });
+    });
+  } catch (err) {
+    console.warn('Cover art dal DB non disponibili, uso localStorage', err);
+    coverArt = loadCoverArt();
+  }
+}
 
 function getCover(round) {
   return coverArt[String(state.year)]?.[String(round)];
@@ -87,9 +147,14 @@ function raceCardHtml(race, cls) {
       ? `<img class="cover-art" src="${escapeHtml(cover.src)}" alt="" loading="lazy" onerror="this.remove()">`
       : '';
   const credit = cover.author ? `<span class="cover-credit">© ${escapeHtml(cover.author)}</span>` : '';
+  const tweetLink = cover.tweetUrl
+      ? `<a class="cover-tweet-link" href="${escapeHtml(cover.tweetUrl)}" target="_blank" rel="noopener noreferrer" title="Vedi tweet" onclick="event.stopPropagation()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>`
+      : '';
   return `
     <div class="race-card ${cls}" data-round="${race.round}">
-      <button class="cover-btn${cover.src ? ' active' : ''}" type="button" title="Cover art" aria-label="Cover art GP ${race.round}">
+      <button class="cover-btn${cover.src || cover.tweetUrl ? ' active' : ''}" type="button" title="Cover art" aria-label="Cover art GP ${race.round}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 22a10 10 0 1 1 10-10c0 1.7-1.1 3.2-2.6 3.6l-3.2 1.4c-.6.3-1 .9-1 1.6 0 .8-.6 1.4-1.4 1.4H12z"></path>
           <circle cx="7.5" cy="10.5" r="1"></circle>
@@ -101,6 +166,7 @@ function raceCardHtml(race, cls) {
         ${preview}
         ${coverImg}
         ${credit}
+        ${tweetLink}
       </div>
       <div class="race-round">Round ${race.round}</div>
       <div class="race-name">${race.raceName.replace('Grand Prix', 'GP')}${hasSprint ? ' <span class="sprint-badge">Sprint</span>' : ''}</div>
@@ -121,73 +187,203 @@ function openCoverModal(round) {
   body.innerHTML = `
     <h2>Cover Art</h2>
     <div class="race-meta">${escapeHtml(race.raceName)} · Round ${round}</div>
-    <p class="cover-hint">Indica il file dell'immagine che aggiungerai al progetto (verticale, 2743 × 3840). Salvala nella cartella <code>cover/</code> e inserisci qui il percorso, es. <code>cover/gp-${round}.jpg</code>.</p>
     <label class="cover-field">
-      <span>Immagine</span>
-      <input type="text" id="cover-src" placeholder="cover/gp-${round}.jpg" value="${escapeHtml(current.src || '')}">
+      <span>Link Tweet X</span>
+      <input type="url" id="cover-tweet" placeholder="https://x.com/.../status/..." value="${escapeHtml(current.tweetUrl || '')}">
     </label>
-    <label class="cover-field">
-      <span>Autore</span>
-      <input type="text" id="cover-author" placeholder="Nome dell'autore" value="${escapeHtml(current.author || '')}">
-    </label>
-    <div id="cover-preview" class="cover-preview"></div>
-    <div class="cover-actions">
-      <button class="cover-save" id="cover-save" type="button">Salva</button>
-      ${current.src || current.author ? '<button class="cover-clear" id="cover-clear" type="button">Rimuovi</button>' : ''}
+    <div class="cover-tabs">
+      <button class="cover-tab active" data-tab="tweet" type="button">Tweet</button>
+      <button class="cover-tab" data-tab="image" type="button">Immagine</button>
     </div>
+    <div id="tweet-preview" class="tweet-preview"></div>
+    <div id="image-preview" class="image-preview hidden"></div>
+    <div class="cover-actions" id="cover-actions"></div>
   `;
 
-  modal.classList.remove('hidden');
-  bindCoverPreview();
+  const tweetPane = document.getElementById('tweet-preview');
+  const imagePane = document.getElementById('image-preview');
+  body.querySelectorAll('.cover-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const showTweet = tab.dataset.tab === 'tweet';
+      body.querySelectorAll('.cover-tab').forEach(t => t.classList.toggle('active', t === tab));
+      tweetPane.classList.toggle('hidden', !showTweet);
+      imagePane.classList.toggle('hidden', showTweet);
+    });
+  });
 
-  document.getElementById('cover-save').addEventListener('click', () => saveCover(round));
-  const clearBtn = document.getElementById('cover-clear');
-  if (clearBtn) clearBtn.addEventListener('click', () => clearCover(round));
+  document.getElementById('cover-tweet').addEventListener('input', () => updateCoverActions(round));
+  updateCoverActions(round);
+
+  modal.classList.remove('hidden');
+  loadTweetPreview();
 }
 
-function bindCoverPreview() {
-  const srcInput = document.getElementById('cover-src');
-  const preview = document.getElementById('cover-preview');
-  if (!srcInput || !preview) return;
+function updateCoverActions(round) {
+  const actions = document.getElementById('cover-actions');
+  if (!actions) return;
+  const hasTweet = !!document.getElementById('cover-tweet').value.trim();
+  actions.innerHTML = `
+    <button class="cover-save" type="button">${hasTweet ? 'Modifica' : 'Salva'}</button>
+  `;
+  actions.querySelector('.cover-save').addEventListener('click', () => saveCover(round));
+}
 
-  const render = () => {
-    const v = srcInput.value.trim();
-    preview.classList.remove('missing');
-    if (!v) {
-      preview.innerHTML = '<span>Nessuna immagine</span>';
+function loadTweetPreview() {
+  const tweetInput = document.getElementById('cover-tweet');
+  const preview = document.getElementById('tweet-preview');
+  if (!tweetInput || !preview) return;
+
+  const render = async () => {
+    const url = tweetInput.value.trim();
+    preview.innerHTML = '';
+    if (!url) {
+      imagePaneEmpty();
       return;
     }
-    preview.innerHTML = `<img src="${escapeHtml(v)}" onerror="this.closest('#cover-preview').classList.add('missing')">`;
+    if (!/x\.com\/\w+\/status\/\d+|twitter\.com\/\w+\/status\/\d+/.test(url)) {
+      preview.innerHTML = '<span class="tweet-error">Link Twitter non valido</span>';
+      imagePaneEmpty();
+      return;
+    }
+    preview.innerHTML = '<span class="tweet-loading">Caricamento tweet...</span>';
+    fetchTweetMedia(url);
+    try {
+      const res = await fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=true&dnt=true`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      preview.innerHTML = data.html;
+      window.twttr?.widgets?.load(preview);
+    } catch {
+      preview.innerHTML = '<span class="tweet-error">Errore caricamento tweet</span>';
+      imagePaneEmpty();
+    }
   };
-  srcInput.addEventListener('input', render);
+  tweetInput.addEventListener('input', render);
   render();
 }
 
-function saveCover(round) {
-  const src = document.getElementById('cover-src').value.trim();
-  const author = document.getElementById('cover-author').value.trim();
+function parseTweetRef(url) {
+  const m = url.match(/x\.com\/(\w+)\/status\/(\d+)|twitter\.com\/(\w+)\/status\/(\d+)/);
+  if (!m) return null;
+  return { user: m[1] || m[3], id: m[2] || m[4] };
+}
+
+// Il link alle immagini non è nell'oembed (il widget le renderizza in un iframe
+// cross-origin che la pagina non può leggere). Si recuperano i media tramite
+// l'API di fxtwitter (Access-Control-Allow-Origin: *).
+async function fetchTweetMedia(url) {
+  const ref = parseTweetRef(url);
+  const imagePane = document.getElementById('image-preview');
+  if (!imagePane || !ref) { showNoImages(); return; }
+  try {
+    const res = await fetch(`https://api.fxtwitter.com/${encodeURIComponent(ref.user)}/status/${ref.id}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.code !== 200 || !data.tweet) throw new Error('tweet non trovato');
+    const urls = (data.tweet.media?.all || [])
+        .map(m => m.type === 'photo' ? m.url : m.thumbnail_url)
+        .filter(Boolean);
+    if (!urls.length) { showNoImages(); return; }
+    showFullImage(urls);
+  } catch {
+    showNoImages();
+  }
+}
+
+function imagePaneEmpty() {
+  const imagePane = document.getElementById('image-preview');
+  if (imagePane) imagePane.innerHTML = '<span class="tweet-error">Incolla un link Twitter per vedere l\'immagine</span>';
+}
+
+// Mostra l'immagine del tweet a tutto schermo dentro il modal, solo in visualizzazione.
+function showFullImage(urls) {
+  const imagePane = document.getElementById('image-preview');
+  if (!imagePane) return;
+  imagePane.innerHTML = urls.map(u => `
+    <img class="full-tweet-img" src="${escapeHtml(u)}" alt="" loading="lazy" onerror="this.remove()">
+  `).join('');
+}
+
+function showNoImages() {
+  const imagePane = document.getElementById('image-preview');
+  if (!imagePane) return;
+  imagePane.innerHTML = '<span class="tweet-error">Nessuna immagine trovata nel tweet</span>';
+}
+
+async function saveCover(round) {
+  const tweetUrl = document.getElementById('cover-tweet').value.trim();
   const y = String(state.year);
+  const existing = getCover(round) || {};
   if (!coverArt[y]) coverArt[y] = {};
-  if (src || author) {
-    coverArt[y][String(round)] = { src, author };
+  if (tweetUrl) {
+    coverArt[y][String(round)] = {
+      src: existing.src || '',
+      author: existing.author || '',
+      tweetUrl,
+    };
   } else {
     delete coverArt[y][String(round)];
   }
   localStorage.setItem(COVER_STORAGE_KEY, JSON.stringify(coverArt));
-  closeCoverModal();
-  renderRaceCalendar();
-}
-
-function clearCover(round) {
-  const y = String(state.year);
-  if (coverArt[y]) delete coverArt[y][String(round)];
-  localStorage.setItem(COVER_STORAGE_KEY, JSON.stringify(coverArt));
+  const db = await getRoom();
+  if (db) {
+    try {
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000));
+      if (tweetUrl) {
+        await Promise.race([
+          db.collection(COVER_COLLECTION).upsert({
+            id: `${y}-${round}`,
+            year: y,
+            round: String(round),
+            src: existing.src || '',
+            author: existing.author || '',
+            tweetUrl,
+          }),
+          timeout,
+        ]);
+      } else {
+        await Promise.race([
+          db.collection(COVER_COLLECTION).delete(`${y}-${round}`),
+          timeout,
+        ]).catch(() => {});
+      }
+    } catch (err) {
+      console.warn('Salvataggio cover art nel DB fallito', err);
+    }
+  }
   closeCoverModal();
   renderRaceCalendar();
 }
 
 function closeCoverModal() {
   document.getElementById('cover-modal').classList.add('hidden');
+}
+
+function csvEscape(value) {
+  return '"' + String(value == null ? '' : value).replace(/"/g, '""') + '"';
+}
+
+// Scarica un CSV con tutti i tweet salvati (fonte: database websim + localStorage).
+function exportTweetsCsv() {
+  const rows = [];
+  rows.push(['anno', 'round', 'tweet_url', 'autore_immagine', 'immagine'].join(','));
+  const years = Object.keys(coverArt).sort((a, b) => a.localeCompare(b));
+  years.forEach(y => {
+    Object.keys(coverArt[y]).forEach(r => {
+      const entry = coverArt[y][r] || {};
+      if (!entry.tweetUrl) return;
+      rows.push([y, r, csvEscape(entry.tweetUrl), csvEscape(entry.author || ''), csvEscape(entry.src || '')].join(','));
+    });
+  });
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tweets.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 async function fetchJSON(url) {
@@ -346,6 +542,7 @@ async function init() {
   });
 
   await loadCircuits();
+  await loadCoverArtFromDb();
   await loadSeason();
 }
 
@@ -596,13 +793,41 @@ function renderOverview() {
     return;
   }
 
+  const isDnf = result => {
+    const status = result?.status || '';
+    return !!status && status !== 'Finished' &&
+      !/^\+\s*\d+\s+Lap/.test(status) &&
+      !['Disqualified', 'Did not start', 'Withdrew', 'Excluded', 'Not started'].includes(status);
+  };
+  const constructorStats = new Map();
+  const getConstructorStats = id => {
+    if (!constructorStats.has(id)) constructorStats.set(id, { wins: 0, poles: 0, podiums: 0, dnfs: 0 });
+    return constructorStats.get(id);
+  };
+  Object.values(state.dataByRound).forEach(round => {
+    (round.results || []).forEach(result => {
+      const stats = getConstructorStats(result.Constructor?.constructorId);
+      const position = parseInt(result.position, 10);
+      if (position === 1) stats.wins++;
+      if (position <= 3) stats.podiums++;
+      if (isDnf(result)) stats.dnfs++;
+    });
+    (round.qualifying || []).forEach(result => {
+      if (parseInt(result.position, 10) === 1) getConstructorStats(result.Constructor?.constructorId).poles++;
+    });
+  });
+
   let html = '<div class="constructor-list">';
   state.constructorStandings.forEach(c => {
     const isFerrari = c.Constructor?.name === 'Ferrari';
+    const stats = constructorStats.get(c.Constructor?.constructorId) || { wins: 0, poles: 0, podiums: 0, dnfs: 0 };
     html += `
       <div class="constructor-row ${isFerrari ? 'ferrari' : ''}">
         <span class="constructor-pos">${c.position}.</span>
-        <span class="constructor-name">${c.Constructor?.name || ''}</span>
+        <div class="constructor-info">
+          <span class="constructor-name">${c.Constructor?.name || ''}</span>
+          <span class="constructor-stats"><span>${stats.wins} vittorie</span><span>${stats.poles} pole</span><span>${stats.podiums} podi</span><span>${stats.dnfs} DNF</span></span>
+        </div>
         <span class="constructor-pts">${c.points} pt</span>
       </div>
     `;
@@ -616,6 +841,20 @@ function renderOverview() {
     return;
   }
 
+  const averagePosition = (driverId, sessionKey) => {
+    let total = 0;
+    let count = 0;
+    Object.values(state.dataByRound).forEach(round => {
+      const result = (round[sessionKey] || []).find(entry => entry.Driver?.driverId === driverId);
+      if (sessionKey === 'results' && isDnf(result)) return;
+      const position = parseInt(result?.position, 10);
+      if (!Number.isFinite(position)) return;
+      total += position;
+      count++;
+    });
+    return count ? total / count : null;
+  };
+
   let dhtml = '';
   state.ferrariDrivers.forEach(d => {
     const given = d.Driver?.givenName || '';
@@ -625,7 +864,7 @@ function renderOverview() {
     const id = d.Driver?.driverId;
     const s = state.raceResults[id] || { poles: 0, podiums: 0 };
     dhtml += `
-      <a class="driver-card" href="driver.html?id=${escapeHtml(id)}">
+      <a class="driver-card" href="index.html?driver=${encodeURIComponent(id)}">
         <div class="driver-number">${num || '?'}</div>
         <div class="driver-info">
           <div class="driver-name">${given} ${family}</div>
@@ -635,6 +874,87 @@ function renderOverview() {
       </a>
     `;
   });
+  const comparisonDrivers = state.ferrariDrivers.slice(0, 2);
+  if (comparisonDrivers.length === 2) {
+    const sessions = [
+      { key: 'qualifying', field: 'position', label: 'Qualifiche' },
+      { key: 'sprint', field: 'grid', label: 'Qualifiche Sprint' },
+      { key: 'results', field: 'position', label: 'Gara' },
+      { key: 'sprint', field: 'position', label: 'Sprint' },
+    ];
+    const comparisons = sessions.map(session => {
+      const wins = [0, 0];
+      let compared = 0;
+      Object.values(state.dataByRound).forEach(round => {
+        const entries = round[session.key] || [];
+        const positions = comparisonDrivers.map(driver => {
+          const result = entries.find(entry => entry.Driver?.driverId === driver.Driver?.driverId);
+          const position = parseInt(result?.[session.field], 10);
+          return Number.isFinite(position) ? position : null;
+        });
+        if (positions[0] === null || positions[1] === null) return;
+        compared++;
+        if (positions[0] < positions[1]) wins[0]++;
+        if (positions[1] < positions[0]) wins[1]++;
+      });
+      return { ...session, wins, compared };
+    });
+    const averageRows = [
+      { key: 'results', label: 'Media posizione gara' },
+      { key: 'qualifying', label: 'Media posizione quali' },
+    ].map(({ key, label }) => ({
+      label,
+      values: comparisonDrivers.map(driver => averagePosition(driver.Driver?.driverId, key)),
+    }));
+    const averageHtml = averageRows.map(({ label, values }) => {
+      const best = Math.min(...values.filter(Number.isFinite));
+      const cells = values.map(value => {
+        if (!Number.isFinite(value)) return '<td>—</td>';
+        const formatted = value.toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        const isBest = Math.abs(value - best) < 1e-9;
+        return `<td class='${isBest ? 'comparison-best' : ''}'>P${formatted}</td>`;
+      }).join('');
+      return `<tr class="comparison-average"><th scope="row">${label}</th>${cells}</tr>`;
+    }).join('');
+    const dnfSessions = [
+      { key: 'results', label: 'Gara' },
+      { key: 'sprint', label: 'Sprint' },
+    ];
+    const dnfCounts = dnfSessions.map(session => ({
+      ...session,
+      counts: comparisonDrivers.map(driver => Object.values(state.dataByRound).reduce((total, round) => {
+        const result = (round[session.key] || []).find(entry => entry.Driver?.driverId === driver.Driver?.driverId);
+        return total + (isDnf(result) ? 1 : 0);
+      }, 0)),
+    }));
+    const driverLabels = comparisonDrivers.map(driver =>
+      driver.Driver?.code || driver.Driver?.familyName || 'Pilota'
+    );
+    dhtml += `
+      <section class="driver-comparison" aria-label="Confronto tra i piloti Ferrari">
+        <h4 class="driver-comparison-title">Testa a testa</h4>
+        <table class="driver-comparison-table">
+          <thead><tr><th scope="col">Sessione</th>${comparisonDrivers.map((driver, i) => `<th scope="col" title="${escapeHtml(`${driver.Driver?.givenName || ''} ${driver.Driver?.familyName || ''}`.trim())}">${escapeHtml(driverLabels[i])}</th>`).join('')}</tr></thead>
+          <tbody>${comparisons.map(({ label, wins, compared }) => `
+            <tr>
+              <th scope="row">${label}<span class="comparison-count">${compared} ${compared === 1 ? 'confronto' : 'confronti'}</span></th>
+              ${wins.map((count, i) => `<td class="${count > wins[1 - i] ? 'comparison-ahead' : ''}">${count}</td>`).join('')}
+            </tr>
+          `).join('')}${averageHtml}</tbody>
+        </table>
+      </section>
+      <section class='driver-comparison driver-dnf' aria-label='Ritiri dei piloti Ferrari'>
+        <h4 class="driver-comparison-title">Ritiri (DNF)</h4>
+        <table class="driver-comparison-table">
+          <thead><tr><th scope="col">Sessione</th>${comparisonDrivers.map((driver, i) => `<th scope="col" title="${escapeHtml(`${driver.Driver?.givenName || ''} ${driver.Driver?.familyName || ''}`.trim())}">${escapeHtml(driverLabels[i])}</th>`).join('')}</tr></thead>
+          <tbody>${dnfCounts.map(({ label, counts }) => `
+            <tr><th scope="row">${label}</th>${counts.map(count => `<td>${count}</td>`).join('')}</tr>
+          `).join('')}</tbody>
+        </table>
+      </section>
+    `;
+  }
+
   driverContainer.innerHTML = dhtml;
 }
 
@@ -791,7 +1111,6 @@ function renderPointsChart() {
 
   let xlabels = '';
   for (let i = 0; i < n; i++) {
-    if (n > 16 && i % 2 !== 0) continue;
     const round = state.raceHistory[i].round;
     const race = state.races.find(r => parseInt(r.round, 10) === round);
     const gpName = race ? race.raceName.replace('Grand Prix', 'GP') : `Round ${round}`;
@@ -804,8 +1123,11 @@ function renderPointsChart() {
     const last = n - 1;
     const dotColor = colorFor(id);
     const isFerrari = d.isFerrari;
+    const markers = d.series.map((value, i) => `<circle cx="${x(i)}" cy="${y(value)}" r="${isFerrari ? 2.5 : 1.8}" fill="${dotColor}" stroke-width="1.2"/>`).join('');
     return `
-      <polyline points="${pts}" fill="none" stroke="${dotColor}" stroke-width="${isFerrari ? 3.2 : 2.2}" stroke-linecap="round" stroke-linejoin="round" class="${isFerrari ? 'line-ferrari' : ''}"/>
+      <polyline points="${pts}" fill="none" stroke="${dotColor}" stroke-width="${isFerrari ? 3.2 : 2.2}"  stroke-linejoin="round" class="${isFerrari ? 'line-ferrari' : ''}"/>
+      ${markers}
+      <polyline points="${pts}" fill="none" stroke="transparent" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" class="chart-line-hit" data-driver="${id}"/>
       <circle cx="${x(last)}" cy="${y(d.series[last])}" r="${isFerrari ? 5 : 4}" fill="${dotColor}" stroke="#fff" stroke-width="1.5"/>
     `;
   }).join('');
@@ -834,11 +1156,33 @@ function renderPointsChart() {
       tooltip.classList.add('visible');
     });
     el.addEventListener('mousemove', ev => {
-      const svg = container.querySelector('svg').getBoundingClientRect();
-      tooltip.style.left = (ev.clientX - svg.left) + 'px';
-      tooltip.style.top = (ev.clientY - svg.top - 30) + 'px';
+      const rect = container.getBoundingClientRect();
+      tooltip.style.left = (ev.clientX - rect.left) + 'px';
+      tooltip.style.top = (ev.clientY - rect.top - 12) + 'px';
     });
     el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+  });
+
+  const svg = container.querySelector('svg');
+  container.querySelectorAll('.chart-line-hit').forEach(line => {
+    line.addEventListener('mouseenter', () => tooltip.classList.add('visible'));
+    line.addEventListener('mousemove', ev => {
+      const point = svg.createSVGPoint();
+      point.x = ev.clientX;
+      point.y = ev.clientY;
+      const chartX = point.matrixTransform(svg.getScreenCTM().inverse()).x;
+      const index = Math.max(0, Math.min(n - 1, Math.round((chartX - ml) / step)));
+      const driver = drivers.get(line.dataset.driver);
+      const round = state.raceHistory[index].round;
+      const race = state.races.find(r => parseInt(r.round, 10) === round);
+      const gpName = race ? race.raceName.replace('Grand Prix', 'GP') : `Round ${round}`;
+      tooltip.textContent = `${driver.code || driver.name} · ${gpName} · ${driver.series[index]} pt`;
+      const rect = container.getBoundingClientRect();
+      tooltip.style.left = (ev.clientX - rect.left) + 'px';
+      tooltip.style.top = (ev.clientY - rect.top - 12) + 'px';
+      tooltip.classList.add('visible');
+    });
+    line.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
   });
 }
 
@@ -959,6 +1303,16 @@ document.getElementById('modal').addEventListener('click', (e) => {
 
 document.getElementById('cover-modal-close').addEventListener('click', closeCoverModal);
 
+document.addEventListener('DOMContentLoaded', () => {
+  const exportBtn = document.getElementById('export-tweets');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async () => {
+      await loadCoverArtFromDb();
+      exportTweetsCsv();
+    });
+  }
+});
+
 document.getElementById('cover-modal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeCoverModal();
 });
@@ -988,42 +1342,4 @@ document.addEventListener('click', (e) => {
   showLoader();
   setTimeout(() => { window.location.href = href; }, 350);
 });
-
-// ============ MEGA MENU ============
-
-const menuToggle = document.getElementById('menu-toggle');
-const megaMenu = document.getElementById('mega-menu');
-const navMegaTrigger = document.querySelector('[data-mega="true"]');
-
-function setMenu(open) {
-  if (!menuToggle || !megaMenu) return;
-  menuToggle.classList.toggle('open', open);
-  menuToggle.setAttribute('aria-expanded', String(open));
-  megaMenu.classList.toggle('open', open);
-  megaMenu.setAttribute('aria-hidden', String(!open));
-}
-
-if (menuToggle && megaMenu) {
-  menuToggle.addEventListener('click', () => {
-    setMenu(!megaMenu.classList.contains('open'));
-  });
-
-  megaMenu.addEventListener('click', e => {
-    if (e.target.closest('.mega-link')) setMenu(false);
-  });
-
-  document.addEventListener('click', e => {
-    if (megaMenu.classList.contains('open') &&
-        !e.target.closest('.site-header')) {
-      setMenu(false);
-    }
-  });
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') setMenu(false);
-  });
-}
-
-if (navMegaTrigger && megaMenu) {
-  navMegaTrigger.addEventListener('mouseenter', () => setMenu(true));
 }
