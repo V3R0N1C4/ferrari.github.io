@@ -4,42 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ferrari Season Analyzer</title>
-  <link rel="icon" type="image/svg+xml" href="assets\logo.svg">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "@websim/websim-socket": "https://esm.websim.com/@websim/websim-socket"
+      }
+    }
+  </script>
 </head>
 <body>
 
 <div id="splash" class="splash">
   <div class="splash-inner">
-    <img src="assets\logo-white.svg" alt="Ferrari" class="splash-logo">
+    <img src="assets/logo-white.svg" alt="Ferrari" class="splash-logo">
   </div>
 </div>
 
 <div id="page-loader" class="page-loader" aria-hidden="true">
   <div class="page-loader-inner">
-    <img src="logo-white.svg" alt="Cavallino" class="page-loader-horse">
+    <img src="assets/logo-white.svg" alt="Cavallino" class="page-loader-horse">
     <div class="page-loader-spinner"></div>
   </div>
 </div>
 
 <header class="site-header">
   <div class="header-inner">
-    <button class="hamburger" id="menu-toggle" aria-label="Apri il menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
-
     <nav class="nav-links" aria-label="Navigazione principale">
-      <a href="#standings" class="nav-link" data-mega="true">Racing</a>
-      <a href="#chart" class="nav-link">Scuderia Ferrari HP</a>
+      <a href="#standings" class="nav-link">Statistiche</a>
+      <a href="#chart" class="nav-link">Andamento stagione</a>
       <a href="#calendar" class="nav-link">Calendario</a>
     </nav>
 
     <a class="brand" href="#top" aria-label="Ferrari Season Analyzer">
       <span class="brand-shield">
-        <img src="assets\logo-white.svg" alt="">
+        <img src="assets/logo-white.svg" alt="">
       </span>
       <span class="brand-text">
         <span class="brand-name">Scuderia Ferrari</span>
@@ -57,32 +61,6 @@
     </div>
   </div>
 
-  <div class="mega-menu" id="mega-menu" aria-hidden="true">
-    <div class="mega-inner">
-      <div class="mega-col">
-        <h5 class="mega-title">Racing</h5>
-        <a href="#standings" class="mega-link">Scuderia Ferrari HP</a>
-        <a href="#standings" class="mega-link">Charles Leclerc</a>
-        <a href="#standings" class="mega-link">Lewis Hamilton</a>
-        <a href="#calendar" class="mega-link">Gare</a>
-        <a href="#chart" class="mega-link">Andamento punti</a>
-      </div>
-      <div class="mega-col">
-        <h5 class="mega-title">Analisi Stagione</h5>
-        <a href="#standings" class="mega-link">Classifica Costruttori</a>
-        <a href="#standings" class="mega-link">Piloti</a>
-        <a href="#chart" class="mega-link">Punti per round</a>
-        <a href="#calendar" class="mega-link">Calendario gare</a>
-      </div>
-      <div class="mega-col">
-        <h5 class="mega-title">La Scuderia</h5>
-        <a href="#top" class="mega-link">Storia</a>
-        <a href="#top" class="mega-link">News</a>
-        <a href="#top" class="mega-link">Media Gallery</a>
-        <a href="#top" class="mega-link">Partner</a>
-      </div>
-    </div>
-  </div>
 </header>
 
 <main id="top">
@@ -140,6 +118,7 @@
       <div class="section-head">
         <p class="eyebrow">Stagione</p>
         <h2>Calendario Gare</h2>
+        <button type="button" id="export-tweets" class="export-btn" title="Scarica i tweet salvati in CSV">Esporta CSV</button>
       </div>
       <div id="race-list"><p class="loading">Caricamento...</p></div>
     </div>
@@ -147,37 +126,6 @@
 </main>
 
 <footer class="site-footer">
-  <div class="footer-inner">
-    <a class="footer-brand" href="#top" aria-label="Ferrari Season Analyzer">
-      <span class="brand-shield">
-        <img src="assets\logo-white.svg" alt="">
-      </span>
-      <span class="brand-text">
-        <span class="brand-name">Scuderia Ferrari</span>
-        <span class="brand-sub">Season Analyzer</span>
-      </span>
-    </a>
-    <div class="footer-cols">
-      <div class="footer-col">
-        <h5 class="footer-title">Racing</h5>
-        <a href="#standings" class="footer-link">Scuderia Ferrari HP</a>
-        <a href="#calendar" class="footer-link">Gare</a>
-        <a href="#chart" class="footer-link">Andamento</a>
-      </div>
-      <div class="footer-col">
-        <h5 class="footer-title">La Scuderia</h5>
-        <a href="#standings" class="footer-link">Charles Leclerc</a>
-        <a href="#standings" class="footer-link">Lewis Hamilton</a>
-        <a href="#standings" class="footer-link">Piloti</a>
-      </div>
-      <div class="footer-col">
-        <h5 class="footer-title">Il Progetto</h5>
-        <a href="#top" class="footer-link">Season Analyzer</a>
-        <a href="#chart" class="footer-link">Grafico punti</a>
-        <a href="#calendar" class="footer-link">Calendario</a>
-      </div>
-    </div>
-  </div>
   <div class="footer-legal">
     <p>© 2026 Scuderia Ferrari Season Analyzer · Progetto indipendente di analisi dati F1</p>
     <p>Dati © Ergast Developer API · api.jolpi.ca · Tracciati © f1-circuits (Sergio Sediq)</p>
