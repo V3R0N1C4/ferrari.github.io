@@ -528,7 +528,16 @@ function formatKm(meters) {
 
 async function init() {
   const yearSelect = document.getElementById('year');
-  getYearOptions().forEach(y => {
+  const years = getYearOptions();
+  let savedYear = null;
+  try {
+    savedYear = parseInt(localStorage.getItem('fsa-selected-season'), 10);
+  } catch (err) {
+    // La pagina resta utilizzabile anche se il browser blocca localStorage.
+  }
+  state.year = years.includes(savedYear) ? savedYear : years[0];
+
+  years.forEach(y => {
     const opt = document.createElement('option');
     opt.value = y;
     opt.textContent = y;
@@ -538,6 +547,11 @@ async function init() {
 
   yearSelect.addEventListener('change', () => {
     state.year = parseInt(yearSelect.value);
+    try {
+      localStorage.setItem('fsa-selected-season', String(state.year));
+    } catch (err) {
+      // Il cambio stagione funziona anche se la persistenza non e disponibile.
+    }
     loadSeason();
   });
 

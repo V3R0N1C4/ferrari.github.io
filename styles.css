@@ -1362,7 +1362,7 @@ img {
   gap: 16px;
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid var(--border-soft);
+  border-top: 1px sstyles.cssolid var(--border-soft);
 }
 
 .circuit-panel-name {
